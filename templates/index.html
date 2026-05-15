@@ -600,7 +600,7 @@ function loadJSON(file){
 }
 
 window.exportDB=function(){
-  window.location.href='/api/db/export/';return;
+  const a=document.createElement('a');a.href='/api/db/export/';a.download='hakjong_db.json';document.body.appendChild(a);a.click();document.body.removeChild(a);return;
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   a.href=url;a.download=`?™ì¢…DB_${new Date().toISOString().split('T')[0]}.json`;
