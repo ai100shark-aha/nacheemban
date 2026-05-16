@@ -1,1 +1,1534 @@
-writing v6.2
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>입시 나침반 — 선택과목 ↔ 학과 ↔ 대학</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/pretendard/1.3.9/variable/pretendardvariable.min.css" rel="stylesheet">
+<style>
+:root{--bg:#0a0f1c;--card:#111827;--card2:#1a2236;--border:#1e293b;--accent:#38bdf8;--accent2:#818cf8;--accent3:#f472b6;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--green:#34d399;--amber:#fbbf24;--red:#f87171;--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Pretendard Variable','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.app{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+.header{text-align:center;padding:28px 0 16px;background:var(--bg)}
+.header h1{font-size:1.9rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.header p{color:var(--text2);font-size:.88rem;line-height:1.5}
+.badge{display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:.72rem;color:var(--accent);margin-top:8px}
+
+/* Mode tabs */
+.tabs{display:flex;justify-content:center;gap:0;margin:20px auto;max-width:920px;background:var(--card);border:1px solid var(--border);border-radius:30px;padding:4px;overflow-x:auto}
+.tab{flex:1;min-width:0;padding:9px 10px;border-radius:26px;border:none;background:transparent;color:var(--text2);font-size:.76rem;font-weight:600;cursor:pointer;transition:all .25s;font-family:inherit;white-space:nowrap}
+.tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 15px rgba(56,189,248,.3)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* Common */
+.step{margin-bottom:24px}.step-title{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.step-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.8rem;color:#fff;flex-shrink:0}
+.step-label{font-size:1.05rem;font-weight:700}
+.group-label{font-size:.72rem;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;display:block}
+.chip-grid{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{padding:6px 13px;border-radius:18px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:.8rem;cursor:pointer;transition:all .2s;user-select:none}
+.chip:hover{border-color:var(--accent);color:var(--text)}
+.chip.selected{background:linear-gradient(135deg,rgba(56,189,248,.15),rgba(129,140,232,.15));border-color:var(--accent);color:var(--accent);font-weight:600}
+.chip.selected::before{content:'✓ '}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:8px;cursor:pointer;transition:all .2s}
+.card:hover{border-color:var(--accent);transform:translateY(-1px)}
+.card.active{border-color:var(--accent2);background:var(--card2)}
+.card-title{font-weight:700;font-size:.9rem;margin-bottom:3px}
+.card-desc{font-size:.78rem;color:var(--text2);line-height:1.4}
+.card-field{display:inline-block;font-size:.68rem;padding:2px 8px;border-radius:6px;margin-top:4px}
+
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center}
+.stat-num{font-size:1.3rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat-label{font-size:.65rem;color:var(--text3);margin-top:2px}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden}
+.panel-hd{padding:11px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.panel-hd:hover{background:var(--card2)}
+.panel-tl{font-weight:700;font-size:.9rem}
+.pbadge{font-size:.65rem;padding:2px 8px;border-radius:10px;font-weight:600}
+.pbadge.f{background:rgba(56,189,248,.12);color:var(--accent)}
+.pbadge.c{background:rgba(52,211,153,.12);color:var(--green)}
+.parrow{color:var(--text3);transition:transform .2s;font-size:.7rem}
+.parrow.open{transform:rotate(180deg)}
+.panel-bd{padding:0 14px 12px;display:none}
+.panel-bd.open{display:block}
+
+.utbl{width:100%;font-size:.75rem;border-collapse:collapse;margin-top:6px}
+.utbl th{text-align:left;padding:6px 4px;color:var(--text3);font-weight:600;font-size:.65rem;border-bottom:1px solid var(--border)}
+.utbl td{padding:5px 4px;border-bottom:1px solid rgba(30,41,59,.5);color:var(--text2);vertical-align:top}
+.utbl tr:hover td{background:rgba(56,189,248,.03)}
+.uname{color:var(--text);font-weight:600}
+.tag{display:inline-block;font-size:.6rem;padding:1px 5px;border-radius:5px;margin-right:2px}
+.tag-iv{background:rgba(251,191,36,.12);color:var(--amber)}
+.tag-mn{background:rgba(248,113,113,.12);color:var(--red)}
+.tag-no{background:rgba(100,116,139,.08);color:var(--text3)}
+
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.fbtn{padding:5px 11px;border-radius:14px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:.75rem;cursor:pointer;transition:all .2s;font-family:inherit}
+.fbtn:hover{border-color:var(--accent)}
+.fbtn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+.strategy{background:var(--card2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px}
+.strategy h3{font-size:.95rem;font-weight:700;margin-bottom:8px;color:var(--accent)}
+.strategy h4{font-size:.82rem;font-weight:600;color:var(--text);margin:10px 0 5px;display:flex;align-items:center;gap:5px}
+.strategy p,.strategy li{font-size:.8rem;color:var(--text2);line-height:1.6}
+.strategy ul{padding-left:16px;margin-bottom:6px}
+.strategy ul li{margin-bottom:3px}
+.rec-subjects{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}
+.rec-chip{padding:4px 10px;border-radius:14px;font-size:.75rem;font-weight:600;background:rgba(56,189,248,.12);color:var(--accent);border:1px solid rgba(56,189,248,.3)}
+.rec-chip.core{background:rgba(248,113,113,.1);color:var(--red);border-color:rgba(248,113,113,.3)}
+.rec-chip.core::before{content:'★ '}
+
+.search-box{position:relative;margin-bottom:12px}
+.search-box input{width:100%;padding:9px 14px 9px 36px;border-radius:18px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.85rem;font-family:inherit;outline:none}
+.search-box input:focus{border-color:var(--accent)}
+.search-box input::placeholder{color:var(--text3)}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:.85rem}
+
+.match-bar{height:4px;background:var(--border);border-radius:2px;margin:5px 0 6px}
+.match-fill{height:100%;border-radius:2px}
+
+.empty{text-align:center;padding:40px 16px;color:var(--text3)}
+.empty-icon{font-size:2.2rem;margin-bottom:10px}
+.empty-text{font-size:.85rem;line-height:1.5}
+.footer{text-align:center;padding:20px 0;color:var(--text3);font-size:.7rem;border-top:1px solid var(--border);margin-top:24px}
+
+/* DB Management panel */
+.db-panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;margin-bottom:16px}
+.db-panel h3{font-size:1rem;font-weight:700;margin-bottom:12px;color:var(--accent)}
+.db-info{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.db-info-item{background:var(--card2);border-radius:8px;padding:10px;text-align:center}
+.db-info-item .val{font-size:1.1rem;font-weight:700;color:var(--text)}
+.db-info-item .lbl{font-size:.68rem;color:var(--text3)}
+.db-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.db-btn{padding:8px 16px;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.db-btn:hover{border-color:var(--accent);color:var(--accent)}
+.db-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none}
+.db-btn.primary:hover{opacity:.9}
+.db-btn.danger{border-color:var(--red);color:var(--red)}
+
+.db-upload-area{border:2px dashed var(--border);border-radius:10px;padding:24px;text-align:center;margin:12px 0;cursor:pointer;transition:all .2s}
+.db-upload-area:hover{border-color:var(--accent);background:rgba(56,189,248,.03)}
+.db-upload-area.dragover{border-color:var(--accent);background:rgba(56,189,248,.08)}
+.db-log{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:10px;max-height:200px;overflow-y:auto;font-size:.72rem;color:var(--text2);font-family:monospace;line-height:1.5}
+
+/* Print styles */
+.print-options{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.print-btn{padding:8px 16px;border-radius:10px;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.print-btn:hover{background:var(--accent);color:#fff}
+.print-btn.pdf{border-color:var(--red);color:var(--red)}
+.print-btn.pdf:hover{background:var(--red);color:#fff}
+
+@media print{
+  body{background:#fff!important;color:#000!important;font-size:11pt}
+  .app{max-width:100%;padding:0}
+  .tabs,.filters,.db-panel,.print-options,.mode-toggle,.search-box,.footer,.badge,.no-print{display:none!important}
+  .header h1{-webkit-text-fill-color:#1a365d;font-size:16pt}
+  .header p{color:#555}
+  .card,.panel,.strategy,.stat{background:#fff!important;border:1px solid #ddd!important;color:#000!important;break-inside:avoid}
+  .card-title,.panel-tl,.uname{color:#000!important}
+  .card-desc,.strategy p,.strategy li{color:#333!important}
+  .panel-bd{display:block!important}
+  .utbl th{color:#555!important;border-bottom:1px solid #ccc!important}
+  .utbl td{color:#333!important;border-bottom:1px solid #eee!important}
+  .stat-num{-webkit-text-fill-color:#1a365d}
+  .stat-label{color:#666!important}
+  .chip.selected{background:#e3f2fd!important;color:#1565c0!important;border-color:#90caf9!important}
+  .rec-chip{background:#e3f2fd!important;color:#1565c0!important;border-color:#90caf9!important}
+  .rec-chip.core{background:#fce4ec!important;color:#c62828!important;border-color:#ef9a9a!important}
+  .tag-iv{background:#fff8e1!important;color:#f57f17!important}
+  .tag-mn{background:#fce4ec!important;color:#c62828!important}
+  .pbadge{background:#e8eaf6!important;color:#283593!important}
+  .step-num{background:#1565c0!important}
+  @page{margin:1.5cm;size:A4}
+}
+
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.header h1{font-size:1.3rem}.db-info{grid-template-columns:1fr}}
+
+/* Mode D/E/F - 고1 맞춤 기능 */
+.roadmap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:10px 0}
+.semester-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:center;transition:all .2s}
+.semester-card.current{border-color:var(--accent);box-shadow:0 0 12px rgba(56,189,248,.15)}
+.semester-card h4{font-size:.82rem;margin-bottom:8px;color:var(--accent)}
+.grade-input{width:60px;padding:5px;border-radius:6px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.85rem;text-align:center;font-family:inherit}
+.grade-input:focus{border-color:var(--accent);outline:none}
+.grade-bar{height:8px;border-radius:4px;margin-top:6px;background:var(--card2);overflow:hidden}
+.grade-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.sim-result{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin:8px 0}
+.sim-tag{display:inline-block;padding:3px 10px;border-radius:12px;font-size:.72rem;margin:2px}
+.profile-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin:8px 0}
+.profile-input{width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.85rem;font-family:inherit;margin-bottom:8px}
+.profile-input:focus{border-color:var(--accent);outline:none}
+.profile-textarea{width:100%;padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:.82rem;font-family:inherit;resize:vertical;min-height:60px}
+.profile-textarea:focus{border-color:var(--accent);outline:none}
+.student-list-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s}
+.student-list-item:hover{background:var(--card2)}
+.student-list-item.active{background:rgba(56,189,248,.08);border-left:3px solid var(--accent)}
+.profile-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:.68rem;font-weight:600}
+.action-btn{padding:8px 16px;border-radius:8px;border:none;font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s}
+.action-btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.action-btn.primary:hover{opacity:.9;transform:translateY(-1px)}
+.action-btn.secondary{background:var(--card2);color:var(--text2);border:1px solid var(--border)}
+.action-btn.danger{background:rgba(248,113,113,.15);color:var(--red);border:1px solid rgba(248,113,113,.3)}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-state .icon{font-size:2.5rem;margin-bottom:12px}
+.two-col{display:grid;grid-template-columns:280px 1fr;gap:16px}
+@media(max-width:768px){
+.two-col{grid-template-columns:1fr}
+.roadmap-grid{grid-template-columns:repeat(3,1fr)}
+.tabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:var(--card2);border:1px solid var(--accent);box-shadow:0 0 12px rgba(56,189,248,.1);position:relative}
+.tabs::-webkit-scrollbar{display:none}
+.tabs::after{content:'';position:sticky;right:0;top:0;bottom:0;width:30px;background:linear-gradient(90deg,transparent,var(--card2));pointer-events:none;flex-shrink:0}
+.tab{font-size:.68rem;padding:8px 8px;min-width:max-content}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+// ===== DB (localStorage 우선, 없으면 내장 DB) =====
+const BUILTIN_DB = [{"nm":"가천대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"가천바람개비","q":434,"m":"1단계)서류100%(4배수) 2단계)서류50%+면접50%","iv":50,"cr":28.68,"grades":{"인문":{"avg":3.93,"fill":73},"자연":{"avg":3.82,"fill":53}}},{"n":"가천의약학","q":45,"m":"1단계)서류100%(4배수) 2단계)서류50%+면접50%","iv":50,"mn":"의예:국수영과탐 중 3개 1등급/한의예:2개 1등급/약학:3개합5","cr":50.88,"dept":[{"d":"의예과","q":15,"cr":83.53},{"d":"한의예과","q":15,"cr":42.87},{"d":"약학과","q":15,"cr":26.27}],"grades":{"자연":{"avg":2.46,"fill":40}}},{"n":"기회균형","q":83,"m":"1단계)서류100%(4배수) 2단계)서류50%+면접50%","iv":50},{"n":"농어촌(종합)","q":74,"m":"1단계)서류100%(4배수) 2단계)서류50%+면접50%","iv":50},{"n":"특성화고졸재직자","q":180,"m":"서류100%"},{"n":"조기취업형계약학과","q":260,"m":"1단계)서류100%(5배수) 2단계)서류50%+면접50%","iv":50}]},{"nm":"가톨릭대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"잠재능력우수자서류","q":251,"m":"서류100%","cr":17.19},{"n":"잠재능력우수자면접","q":277,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30,"cr":24.45,"grades":{"인문":{"avg":3.71,"fill":44}}},{"n":"가톨릭지도자추천","q":51,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30,"cr":8.0},{"n":"학교장추천","q":50,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30,"mn":"의예:국수영과탐 중 3개합4,한국사4/약학:3개합5","cr":22.73,"dept":[{"d":"의예과","q":22,"cr":35.82},{"d":"약학과","q":8,"cr":28.5},{"d":"간호학과","q":20,"cr":15.3}]},{"n":"기회균형Ⅰ","q":96,"m":"서류100%"}]},{"nm":"강남대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"학교생활우수자1","q":239,"m":"서류100%"},{"n":"학교생활우수자2","q":55,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"강원대학교","rg":"강원","lc":"강원","tp":"국립","pg":[{"n":"미래인재서류","q":638,"m":"서류100%","cr":8.52},{"n":"미래인재면접","q":413,"m":"1단계)서류100%(3~4배수) 2단계)서류60%+면접40%","iv":40,"cr":11.1,"dept":[{"d":"수의예과","q":15},{"d":"간호학과","q":25}]},{"n":"지역인재(종합)","q":30,"m":"1단계)서류100%(3배수) 2단계)서류60%+의학인적성면접40%","iv":40,"mn":"국수영과탐 중 수학,과탐 포함 3개합7","dept":[{"d":"의예과","q":30}]},{"n":"기회균형","q":162,"m":"서류100%"}]},{"nm":"건국대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"KU자기추천","q":893,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"cr":21.87,"dept":[{"d":"컴퓨터공학부","q":30,"cr":28.53},{"d":"화학공학과","q":15,"cr":18.2},{"d":"경영학과","q":40,"cr":25.6},{"d":"법학과","q":20,"cr":22.1},{"d":"전기전자공학부","q":25,"cr":19.87}],"grades":{"인문":{"avg":2.61,"fill":55},"자연":{"avg":2.21,"fill":62}}},{"n":"기회균형","q":80,"m":"학생부교과30%+서류70%"}]},{"nm":"건국대학교(글로컬)","rg":"충청","lc":"충북","tp":"사립","pg":[{"n":"Cogito자기추천","q":495,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"mn":"의예과만: 국수영과탐 중 3개합5, 한국사4등급","cr":5.8},{"n":"지역인재","q":42,"m":"간호:서류100% / 의예:1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"mn":"간호X, 의예만 적용"}]},{"nm":"경기대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"KGU학생부종합","q":678,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"cr":13.66,"grades":{"인문":{"avg":3.56,"fill":76},"자연":{"avg":3.49,"fill":81}}},{"n":"SW우수자","q":15,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"cr":10.27},{"n":"기회균형선발","q":203,"m":"서류100%"}]},{"nm":"경북대학교","rg":"대경","lc":"대구","tp":"국립","pg":[{"n":"일반학생","q":907,"m":"서류100%","mn":"계열별 차등: 경상대2개합6, 인문대2개합7, IT대2개합6(수학포함), 의예3개합4(수학포함) 등","cr":17.39,"dept":[{"d":"의예과","q":20,"cr":52.1},{"d":"치의예과","q":10,"cr":48.3},{"d":"약학과","q":15,"cr":32.67},{"d":"수의예과","q":10,"cr":28.4},{"d":"컴퓨터학부","q":35,"cr":21.57},{"d":"전자공학부","q":30,"cr":15.8},{"d":"간호학과","q":20,"cr":18.9}],"grades":{"인문":{"avg":4.13,"fill":46},"자연":{"avg":3.69,"fill":39}}},{"n":"지역인재","q":395,"m":"1단계)서류100%(4~5배수) 2단계)서류70%+면접30%","iv":30,"mn":"의예:수학포함3개합4/치의예:수학포함3개합4/수의예,약학:수학포함3개합5","cr":16.87,"dept":[{"d":"의예과","q":49,"cr":24.1},{"d":"치의예과","q":15,"cr":22.53},{"d":"수의예과","q":13,"cr":18.0},{"d":"약학과","q":22,"cr":19.73}],"grades":{"인문":{"avg":3.81,"fill":26},"자연":{"avg":3.15,"fill":32}}},{"n":"SW특별전형","q":10,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30,"cr":15.8},{"n":"농어촌학생","q":195,"m":"서류100%","mn":"의예,치의예,약학만 수능최저 적용"}]},{"nm":"경상국립대학교","rg":"동남","lc":"경남","tp":"국립","pg":[{"n":"일반전형","q":710,"m":"서류100% (사범대,의대,약대,수의대,간호대: 1단계서류100% 2단계서류80%+면접20%)","iv":20,"mn":"의대,약대:수학포함3개합6/수의대:수학포함3개합7","cr":7.39},{"n":"지역인재","q":354,"m":"서류100% (사범대,의대,약대,수의대,간호대: 1단계서류100% 2단계서류80%+면접20%)","iv":20,"mn":"의대,약대:수학포함3개합6/수의대:수학포함3개합7","cr":6.3}]},{"nm":"경희대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"네오르네상스","q":1076,"m":"1단계)서류100%(3~4배수) 2단계)서류70%+면접30%","iv":30,"mn":"의/치/한/약학: 3개합4, 한국사5등급","cr":20.38,"dept":[{"d":"의예과","q":29,"cr":76.21,"officialRec":{"field":"의학","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":["화학Ⅰ","생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계"],"recSci":["물리학Ⅰ","화학Ⅱ"]}},{"d":"치의예과","q":11,"cr":55.36,"officialRec":{"field":"의학","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":["화학Ⅰ","생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계"],"recSci":["물리학Ⅰ","화학Ⅱ"]}},{"d":"한의예과","q":16,"cr":45.88,"officialRec":{"field":"의학","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":["화학Ⅰ","생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계"],"recSci":["물리학Ⅰ","화학Ⅱ"]}},{"d":"약학과","q":18,"cr":38.44,"officialRec":{"field":"약학","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":["화학Ⅰ","생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계","기하"],"recSci":["화학Ⅱ"]}},{"d":"컴퓨터공학과","q":25,"cr":28.72},{"d":"전자공학과","q":20,"cr":18.65,"officialRec":{"field":"전기전자","coreMath":["수학Ⅰ","수학Ⅱ","미적분","기하"],"coreSci":["물리학Ⅰ","물리학Ⅱ"],"recMath":["확률과통계"],"recSci":["화학Ⅰ"]}},{"d":"경영학과","q":30,"cr":22.4},{"d":"간호학과","q":15,"cr":16.93,"officialRec":{"field":"간호보건","coreMath":["수학Ⅰ","수학Ⅱ"],"coreSci":["생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계","미적분"],"recSci":["화학Ⅰ","화학Ⅱ"]}}],"grades":{"인문":{"avg":2.53,"fill":65},"자연":{"avg":2.02,"fill":54}}},{"n":"국가보훈/수급자/농어촌 등","q":150,"m":"학생부교과30%+서류70%"},{"n":"기회균형Ⅱ","q":90,"m":"학생부교과30%+서류70%"}]},{"nm":"고려대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"학업우수","q":901,"m":"서류100%","mn":"국수영탐 4개합8, 한국사4등급 / 의과대학: 4개합5","cr":15.07,"dept":[{"d":"의과대학","q":33,"cr":48.61},{"d":"컴퓨터학과","q":35,"cr":22.14},{"d":"전기전자공학부","q":40,"cr":16.8,"officialRec":{"field":"전기전자","coreMath":["수학Ⅰ","수학Ⅱ","미적분","기하"],"coreSci":["물리학Ⅰ","물리학Ⅱ"],"recMath":["확률과통계"],"recSci":["화학Ⅰ"]}},{"d":"경영학과","q":55,"cr":14.25},{"d":"법학과","q":30,"cr":18.5},{"d":"간호학과","q":20,"cr":12.85,"officialRec":{"field":"간호보건","coreMath":["수학Ⅰ","수학Ⅱ"],"coreSci":["생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계","미적분"],"recSci":["화학Ⅰ","화학Ⅱ"]}}],"grades":{"인문":{"avg":2.19,"fill":75},"자연":{"avg":1.86,"fill":54}}},{"n":"계열적합","q":521,"m":"1단계)서류100%(5배수) 2단계)서류60%+면접40%","iv":40,"cr":13.09,"dept":[{"d":"컴퓨터학과","q":20,"cr":18.3},{"d":"기계공학부","q":15,"cr":11.2,"officialRec":{"field":"기계","coreMath":["수학Ⅰ","수학Ⅱ","미적분","기하"],"coreSci":["물리학Ⅰ","물리학Ⅱ"],"recMath":["확률과통계"],"recSci":["화학Ⅰ","화학Ⅱ"]}},{"d":"화학과","q":10,"cr":8.5,"officialRec":{"field":"생명과학환경","coreMath":["수학Ⅰ","수학Ⅱ"],"coreSci":["생명과학Ⅰ","화학Ⅰ","생명과학Ⅱ"],"recMath":["미적분","확률과통계"],"recSci":["화학Ⅱ","물리학Ⅰ"]}}],"grades":{"인문":{"avg":2.46,"fill":152},"자연":{"avg":2.74,"fill":165}}},{"n":"고른기회","q":199,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40}]},{"nm":"고려대학교(세종)","rg":"충청","lc":"세종","tp":"사립","pg":[{"n":"크림슨인재","q":424,"m":"서류100%","cr":8.97},{"n":"지역인재","q":48,"m":"서류100%","mn":"약학과만: 국수영과탐 중 3개합5"}]},{"nm":"공주대학교","rg":"충청","lc":"충남","tp":"국립","pg":[{"n":"일반전형","q":855,"m":"서류100% (사범대,예술대: 1단계서류100%(4배수) 2단계서류70%+면접30%)","iv":30,"cr":8.19}]},{"nm":"광운대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"광운참빛인재Ⅰ(면접형)","q":250,"m":"1단계)서류100%(3.5배수) 2단계)서류60%+면접40%","iv":40,"cr":10.72,"grades":{"인문":{"avg":3.21,"fill":106},"자연":{"avg":2.88,"fill":146}}},{"n":"광운참빛인재Ⅱ(서류형)","q":221,"m":"서류100%","cr":9.4},{"n":"소프트웨어우수인재","q":72,"m":"1단계)서류100%(3.5배수) 2단계)서류60%+면접40%","iv":40,"cr":12.2}]},{"nm":"국민대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"국민프런티어","q":724,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"cr":18.67,"grades":{"인문":{"avg":3.01,"fill":65},"자연":{"avg":2.71,"fill":60}}},{"n":"국제인재","q":15,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"알고리즘우수자","q":10,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"농어촌학생","q":100,"m":"서류100%"},{"n":"기회균형Ⅰ","q":122,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"기회균형Ⅱ","q":57,"m":"서류100%"}]},{"nm":"단국대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"DKU인재(서류형)","q":680,"m":"서류100%","grades":{"인문":{"avg":3.26,"fill":55},"자연":{"avg":3.01,"fill":58}}},{"n":"DKU인재(면접형)","q":227,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"mn":"의예/치의예:수학(미/기)포함3개합5 / 약학:수학(미/기)포함3개합6"},{"n":"SW인재","q":34,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"군사학과","q":30,"m":"학생부80%+면접10%+체력평가10%+P/F(신원조회)","iv":10},{"n":"기회균형선발","q":140,"m":"서류100%"},{"n":"사회적배려대상자","q":115,"m":"서류100%"},{"n":"창업인재","q":12,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"교육기회배려자","q":148,"m":"서류100%","mn":"약학과만: 수학(미/기)포함3개합6"},{"n":"농어촌학생","q":107,"m":"서류100%","mn":"의예,치의예만: 수학(미/기)포함3개합5"},{"n":"특수교육대상자","q":29,"m":"서류100%"}]},{"nm":"대진대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"윈윈대진","q":310,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"cr":5.14}]},{"nm":"덕성여자대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"덕성인재Ⅰ","q":115,"m":"서류100%","cr":13.14,"grades":{"인문":{"avg":3.03,"fill":176}}},{"n":"덕성인재Ⅱ","q":240,"m":"1단계)서류100%(3~4배수) 2단계)서류60%+면접40%","iv":40,"cr":16.2},{"n":"기회균형Ⅱ-사회통합","q":15,"m":"서류100%"},{"n":"특성화고등 고졸재직자","q":6,"m":"서류100%"},{"n":"특성화고졸재직자","q":68,"m":"서류100%"},{"n":"농어촌학생","q":37,"m":"서류100%"},{"n":"기초생활수급자","q":20,"m":"서류100%"},{"n":"장애인등 대상자","q":5,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40}]},{"nm":"동국대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"Do Dream","q":656,"m":"1단계)서류100%(2.5~3.5배수) 2단계)서류70%+면접30%","iv":30,"cr":23.62,"grades":{"인문":{"avg":2.84,"fill":84},"자연":{"avg":2.38,"fill":58}}},{"n":"불교추천인재","q":108,"m":"1단계)서류100%(2~3배수) 2단계)서류70%+면접30%","iv":30,"cr":6.0},{"n":"기회균형통합","q":132,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30},{"n":"특수교육대상자","q":8,"m":"1단계)서류100%(6배수) 2단계)서류70%+면접30%","iv":30},{"n":"특성화고졸재직자(면접형)","q":64,"m":"1단계)서류100%(2.5배수) 2단계)1단계70%+서류30%"},{"n":"특성화고졸재직자(서류형)","q":87,"m":"서류100%"}]},{"nm":"동덕여자대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"동덕창의리더","q":255,"m":"1단계)서류100%(3배수) 2단계)서류40%+면접60%","iv":60,"mn":"약학과만: 국수(미/기)과탐(1) 3개합6"},{"n":"기회균형","q":12,"m":"서류100%"},{"n":"특성화고등 고졸재직자","q":6,"m":"서류100%"},{"n":"특성화고졸재직자","q":85,"m":"서류100%"}]},{"nm":"명지대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"명지인재면접","q":369,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30,"cr":16.98,"grades":{"인문":{"avg":3.85,"fill":43},"자연":{"avg":3.59,"fill":68}}},{"n":"명지인재서류","q":359,"m":"서류100%","cr":13.38,"grades":{"인문":{"avg":3.49,"fill":115},"자연":{"avg":3.36,"fill":103}}},{"n":"크리스천리더","q":52,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30,"cr":11.25},{"n":"사회적배려대상자","q":35,"m":"서류100%"},{"n":"농어촌학생","q":93,"m":"서류100%"}]},{"nm":"부산대학교","rg":"동남","lc":"부산","tp":"국립","pg":[{"n":"학생부종합","q":727,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20,"mn":"치의예만: 수학포함3개합5, 한국사4등급","cr":12.87,"dept":[{"d":"의예과","q":22,"cr":28.5},{"d":"치의예과","q":12,"cr":22.3},{"d":"약학전공","q":15,"cr":18.6},{"d":"컴퓨터공학과","q":20,"cr":16.8},{"d":"간호학과","q":15,"cr":12.4}],"grades":{"인문":{"avg":3.06,"fill":56},"자연":{"avg":2.93,"fill":65}}},{"n":"지역인재(종합)","q":164,"m":"1단계)서류100%(3~4배수) 2단계)서류80%+면접20%","iv":20,"mn":"간호:수학포함2개합6/의예:수학포함3개합4/치의예:수학포함3개합5/약학:수학포함3개합5","grades":{"인문":{"avg":2.97,"fill":77},"자연":{"avg":3.25,"fill":48}}},{"n":"지역인재 저소득층","q":10,"m":"서류100%","mn":"간호:수학포함2개합6/의예:수학포함3개합5/치의예:수학포함3개합5/약학:수학포함3개합6"},{"n":"사회배려자","q":209,"m":"서류100%"},{"n":"저소득층학생","q":91,"m":"서류100%","mn":"간호:수학포함2개합6/약학:수학포함3개합6, 한국사4등급"},{"n":"특성화고교졸업자","q":11,"m":"서류100%"},{"n":"특수교육대상자","q":23,"m":"서류100%"}]},{"nm":"삼육대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"세움인재","q":228,"m":"1단계)서류100%(4배수) 2단계)서류60%+면접40%","iv":40,"mn":"약학과만: 수학(미/기)포함3개합5","cr":16.29,"grades":{"인문":{"avg":3.83,"fill":66},"자연":{"avg":3.4,"fill":78}}},{"n":"재림교회목회자추천","q":79,"m":"1단계)서류100%(4배수) 2단계)서류60%+면접40%","iv":40,"mn":"1개영역4등급/간호물리치료:3등급/약학:수학(미/기)포함3개합5"},{"n":"신학특별전형","q":38,"m":"1단계)서류100%(4배수) 2단계)서류48%+성경고사20%+면접32%","iv":32},{"n":"기회균형Ⅰ","q":38,"m":"1단계)서류100%(4배수) 2단계)서류60%+면접40%","iv":40},{"n":"SW인재","q":30,"m":"1단계)서류100%(4배수) 2단계)서류60%+면접40%","iv":40,"cr":7.1},{"n":"기회균형Ⅱ","q":11,"m":"1단계)서류100%(4배수) 2단계)서류60%+면접40%","iv":40,"mn":"약학과만: 수학(미/기)포함3개합5"},{"n":"특수교육대상자","q":9,"m":"1단계)서류100%(4배수) 2단계)서류60%+면접40%","iv":40,"mn":"약학과만: 수학(미/기)포함3개합5"}]},{"nm":"상명대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"상명인재","q":311,"m":"서류100%(스포츠/조형/예체능:1단계서류100%(5배수)2단계서류60%+면접40%)","iv":40,"cr":15.73,"grades":{"인문":{"avg":2.99,"fill":118},"자연":{"avg":3.0,"fill":103}}},{"n":"기회균형","q":142,"m":"서류100%"},{"n":"특성화고졸재직자","q":124,"m":"서류100%"},{"n":"특수교육대상자","q":17,"m":"서류100%"}]},{"nm":"서강대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"일반전형Ⅰ","q":487,"m":"서류100%","grades":{"인문":{"avg":3.08,"fill":130},"자연":{"avg":2.93,"fill":171}}},{"n":"일반전형Ⅱ","q":74,"m":"서류100%"},{"n":"기회균형","q":85,"m":"서류100%"},{"n":"서강가치","q":34,"m":"서류100%"},{"n":"특성화고졸업자","q":6,"m":"서류100%"}]},{"nm":"서울과학기술대학교","rg":"서울","lc":"서울","tp":"국립","pg":[{"n":"학교생활우수자","q":486,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"cr":17.13,"grades":{"인문":{"avg":3.01,"fill":64},"자연":{"avg":2.75,"fill":51}}},{"n":"창의융합인재","q":71,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"cr":12.4},{"n":"기회균등","q":86,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"농어촌학생","q":64,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"특수교육대상자","q":10,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"서울대학교","rg":"서울","lc":"서울","tp":"국립","pg":[{"n":"지역균형","q":511,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"mn":"국수영탐(2과목평균) 중 3개합7","cr":4.97,"dept":[{"d":"의예과","q":10,"cr":8.5},{"d":"컴퓨터공학부","q":10,"cr":7.2},{"d":"전기정보공학부","q":10,"cr":5.8},{"d":"경영학과","q":8,"cr":6.3},{"d":"법학부","q":8,"cr":5.5},{"d":"간호학과","q":5,"cr":4.2}],"grades":{"인문":{"avg":1.27,"fill":5},"자연":{"avg":1.24,"fill":14}}},{"n":"일반전형","q":1495,"m":"1단계)서류100%(2배수) 2단계)서류50%+면접및구술50%","iv":50,"mn":"디자인과만: 3개합7","cr":10.07,"dept":[{"d":"의예과","q":75,"cr":22.8},{"d":"컴퓨터공학부","q":35,"cr":15.64},{"d":"전기정보공학부","q":40,"cr":12.3},{"d":"기계공학부","q":35,"cr":9.8},{"d":"화학생물공학부","q":30,"cr":8.5},{"d":"경영학과","q":25,"cr":13.2},{"d":"경제학부","q":20,"cr":11.6},{"d":"법학부","q":25,"cr":12.9},{"d":"심리학과","q":12,"cr":14.3},{"d":"간호학과","q":15,"cr":8.7},{"d":"수학과","q":15,"cr":7.4},{"d":"물리학과","q":18,"cr":6.8},{"d":"화학부","q":15,"cr":5.9},{"d":"생명과학부","q":20,"cr":7.2},{"d":"약학과","q":15,"cr":18.5}],"grades":{"인문":{"avg":2.04,"fill":3},"자연":{"avg":1.95,"fill":13}}},{"n":"사회통합","q":177,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"서울시립대학교","rg":"서울","lc":"서울","tp":"공립","pg":[{"n":"학생부종합Ⅰ(면접형)","q":391,"m":"1단계)서류100%(3배수) 2단계)서류50%+면접50%","iv":50,"cr":24.64,"dept":[{"d":"컴퓨터과학부","q":15,"cr":32.8},{"d":"전자전기컴퓨터공학부","q":20,"cr":28.6},{"d":"경영학부","q":20,"cr":22.4}],"grades":{"인문":{"avg":2.91,"fill":76},"자연":{"avg":2.31,"fill":38}}},{"n":"학생부종합Ⅱ(서류형)","q":99,"m":"서류100%","cr":18.2,"grades":{"인문":{"avg":2.49,"fill":88},"자연":{"avg":2.06,"fill":45}}},{"n":"기회균형Ⅰ","q":132,"m":"1단계)서류100%(3배수) 2단계)서류50%+면접50%","iv":50},{"n":"사회공헌통합","q":46,"m":"1단계)서류100%(3배수) 2단계)서류50%+면접50%","iv":50}]},{"nm":"서울여자대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"바롬인재서류","q":179,"m":"서류100%","cr":12.11,"grades":{"인문":{"avg":3.36,"fill":179},"자연":{"avg":3.16,"fill":157}}},{"n":"바롬인재면접","q":202,"m":"1단계)서류100%(5배수) 2단계)서류50%+면접50%","iv":50,"cr":25.13,"grades":{"인문":{"avg":3.6,"fill":85},"자연":{"avg":3.31,"fill":68}}},{"n":"SW융합인재","q":29,"m":"1단계)서류100%(5배수) 2단계)서류50%+면접50%","iv":50},{"n":"기독교지도자","q":23,"m":"1단계)서류100%(3배수) 2단계)서류50%+면접50%","iv":50},{"n":"사회통합지원","q":59,"m":"서류100%"},{"n":"농어촌학생","q":63,"m":"서류100%"}]},{"nm":"성균관대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"융합인재","q":332,"m":"서류100%","mn":"국수영사/과탐(2과목평균) 중 3개합6","cr":23.45,"dept":[{"d":"의예과","q":15,"cr":68.2,"officialRec":{"field":"의학","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":["화학Ⅰ","생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계"],"recSci":["물리학Ⅰ","화학Ⅱ"]}},{"d":"약학과","q":10,"cr":42.3,"officialRec":{"field":"약학","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":["화학Ⅰ","생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계","기하"],"recSci":["화학Ⅱ"]}},{"d":"컴퓨터교육과","q":5,"cr":35.1,"officialRec":{"field":"컴퓨터","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":[],"recMath":["기하","확률과통계","인공지능수학"],"recSci":[]}},{"d":"소프트웨어학과","q":20,"cr":28.9,"officialRec":{"field":"컴퓨터","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":[],"recMath":["기하","확률과통계","인공지능수학"],"recSci":[]}}],"grades":{"인문":{"avg":2.53,"fill":345},"자연":{"avg":2.11,"fill":414}}},{"n":"탐구인재","q":565,"m":"서류100%","cr":18.91,"dept":[{"d":"소프트웨어학과","q":25,"cr":24.5,"officialRec":{"field":"컴퓨터","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":[],"recMath":["기하","확률과통계","인공지능수학"],"recSci":[]}},{"d":"반도체시스템공학과","q":15,"cr":22.8,"officialRec":{"field":"전기전자","coreMath":["수학Ⅰ","수학Ⅱ","미적분","기하"],"coreSci":["물리학Ⅰ","물리학Ⅱ"],"recMath":["확률과통계"],"recSci":["화학Ⅰ"]}},{"d":"경영학과","q":30,"cr":19.6}],"grades":{"인문":{"avg":3.03,"fill":127},"자연":{"avg":2.9,"fill":187}}},{"n":"성균인재","q":227,"m":"사범대/의예/자유전공/글로벌융합:1단계서류100%(3~5배수)2단계서류70%+면접30%","iv":30,"grades":{"인문":{"avg":2.83,"fill":150},"자연":{"avg":2.44,"fill":116}}},{"n":"과학인재","q":155,"m":"1단계)서류100%(7배수) 2단계)서류70%+면접30%","iv":30,"cr":10.46,"grades":{"자연":{"avg":4.27,"fill":206}}},{"n":"기회균형","q":28,"m":"서류100%"},{"n":"농어촌학생","q":81,"m":"서류100%"},{"n":"이웃사랑","q":60,"m":"서류100%"},{"n":"특성화고졸재직자","q":190,"m":"서류100%"}]},{"nm":"성신여자대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"자기주도인재","q":525,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40,"cr":12.37,"grades":{"인문":{"avg":3.1,"fill":83},"자연":{"avg":2.94,"fill":68}}},{"n":"기회균형Ⅰ","q":109,"m":"서류100%"},{"n":"특수교육대상자","q":23,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40}]},{"nm":"세종대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"세종인재(면접형)","q":360,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40,"cr":12.64,"grades":{"인문":{"avg":2.8,"fill":101},"자연":{"avg":2.85,"fill":61}}},{"n":"세종인재(서류형)","q":228,"m":"서류100%","cr":11.28,"grades":{"인문":{"avg":2.81,"fill":122},"자연":{"avg":2.54,"fill":105}}},{"n":"기회균형","q":98,"m":"서류100%"},{"n":"특성화고졸재직자","q":120,"m":"서류100%"}]},{"nm":"숙명여자대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"숙명인재(면접형)","q":361,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30,"cr":15.15,"grades":{"인문":{"avg":2.92,"fill":86},"자연":{"avg":2.34,"fill":44}}},{"n":"소프트웨어인재","q":35,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30,"cr":7.01},{"n":"기회균형","q":71,"m":"서류100%"},{"n":"농어촌학생","q":63,"m":"서류100%"},{"n":"특수교육대상자","q":10,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"순천향대학교","rg":"충청","lc":"충남","tp":"사립","pg":[{"n":"일반학생","q":723,"m":"서류100%","cr":12.58},{"n":"충청형지역인재","q":42,"m":"서류100%"},{"n":"SW융합","q":12,"m":"서류100%"}]},{"nm":"숭실대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"SSU미래인재(면접형)","q":492,"m":"1단계)서류100%(3~3.5배수) 2단계)서류50%+면접50%","iv":50,"cr":17.58,"grades":{"인문":{"avg":3.23,"fill":51},"자연":{"avg":2.76,"fill":59}}},{"n":"SSU미래인재(서류형)","q":154,"m":"서류100%"},{"n":"기회균형","q":130,"m":"1단계)서류100%(3배수) 2단계)서류50%+면접50%","iv":50},{"n":"SW우수자","q":17,"m":"1단계)서류100%(3배수) 2단계)서류50%+면접50%","iv":50,"cr":13.62},{"n":"특성화고졸재직자","q":147,"m":"서류100%"}]},{"nm":"신한대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"신한국인","q":108,"m":"서류100%","cr":21.11},{"n":"기회균형","q":74,"m":"서류100%"}]},{"nm":"세명대학교","rg":"충청","lc":"충북","tp":"사립","pg":[{"n":"SMU의료인재","q":33,"m":"서류100%","mn":"한의예과만: 국수(미/기)영 3개합5"}]},{"nm":"선문대학교","rg":"충청","lc":"충남","tp":"사립","pg":[{"n":"서류전형","q":257,"m":"서류100%"}]},{"nm":"성결대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"영암인재","q":119,"m":"서류100%"}]},{"nm":"성공회대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"열린인재","q":196,"m":"서류60%+면접40%","iv":40,"cr":5.41}]},{"nm":"서울신학대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"H+인재","q":94,"m":"1단계)서류100%(4배수) 2단계)서류60%+면접40%","iv":40}]},{"nm":"아주대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"ACE","q":560,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"mn":"의학과:4개합6/약학:3개합5","cr":15.51,"dept":[{"d":"의학과","q":20,"cr":42.3},{"d":"약학과","q":12,"cr":28.5},{"d":"소프트웨어학과","q":18,"cr":22.4},{"d":"전자공학과","q":15,"cr":16.8}],"grades":{"인문":{"avg":3.42,"fill":39},"자연":{"avg":2.87,"fill":67}}},{"n":"첨단융합인재","q":184,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"cr":10.59,"grades":{"자연":{"avg":2.66,"fill":46}}},{"n":"고른기회Ⅰ","q":91,"m":"서류100%"},{"n":"고른기회Ⅱ","q":54,"m":"서류100%"},{"n":"특수교육대상자","q":10,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"국방IT우수인재1","q":23,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%+신체검사(P/F)","iv":30},{"n":"특성화고졸재직자","q":105,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"안양대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"아리학생부종합","q":167,"m":"서류100%"},{"n":"고른기회","q":21,"m":"서류100%"}]},{"nm":"연세대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"활동우수형","q":749,"m":"1단계)서류100%(4배수) 2단계)서류60%+면접40%","iv":40,"mn":"인문:국수중1개포함2개합4,영어3등급/자연:수학포함2개합5,영어3등급/의치약:2개1등급,영어3등급","cr":11.62,"dept":[{"d":"의예과","q":39,"cr":28.46,"officialRec":{"field":"의학","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":["화학Ⅰ","생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계"],"recSci":["물리학Ⅰ","화학Ⅱ"]}},{"d":"치의예과","q":11,"cr":22.73,"officialRec":{"field":"의학","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":["화학Ⅰ","생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계"],"recSci":["물리학Ⅰ","화학Ⅱ"]}},{"d":"약학과","q":15,"cr":19.8,"officialRec":{"field":"약학","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":["화학Ⅰ","생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계","기하"],"recSci":["화학Ⅱ"]}},{"d":"컴퓨터과학과","q":25,"cr":16.5,"officialRec":{"field":"컴퓨터","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":[],"recMath":["기하","확률과통계","인공지능수학"],"recSci":[]}},{"d":"전기전자공학부","q":30,"cr":13.2,"officialRec":{"field":"전기전자","coreMath":["수학Ⅰ","수학Ⅱ","미적분","기하"],"coreSci":["물리학Ⅰ","물리학Ⅱ"],"recMath":["확률과통계"],"recSci":["화학Ⅰ"]}},{"d":"경영학과","q":35,"cr":12.6},{"d":"간호학과","q":12,"cr":9.4,"officialRec":{"field":"간호보건","coreMath":["수학Ⅰ","수학Ⅱ"],"coreSci":["생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계","미적분"],"recSci":["화학Ⅰ","화학Ⅱ"]}}],"grades":{"인문":{"avg":1.93,"fill":77},"자연":{"avg":1.67,"fill":75}}},{"n":"국제형","q":254,"m":"1단계)서류100%(5배수) 2단계)서류60%+면접40%","iv":40,"mn":"국내고만: 국수중1개포함2개합5,영어2등급","cr":14.1},{"n":"국제인재","q":120,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40},{"n":"기회균형","q":189,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40},{"n":"특수교육대상자","q":13,"m":"서류100%"}]},{"nm":"연세대학교(미래)","rg":"강원","lc":"강원","tp":"사립","pg":[{"n":"학교생활우수자(면접형)","q":350,"m":"1단계)서류100%(3.5배수/의예:6배수) 2단계)서류70%+면접30%","iv":30,"mn":"의예과만: 4개합5,영어2등급","cr":6.48},{"n":"학교생활우수자(서류형)","q":58,"m":"서류100%"},{"n":"강원인재(일반)","q":85,"m":"서류100%(의예:서류80%+면접20%)","iv":20,"mn":"의예과만: 수학포함3개합5","cr":7.57},{"n":"강원인재(한마음)","q":5,"m":"서류100%(의예:서류80%+면접20%)","iv":20,"mn":"의예과만: 수학포함3개합5"},{"n":"사회통합","q":50,"m":"서류100%(의예:서류80%+면접20%)","iv":20,"mn":"의예과만: 4개합5,영어2등급"},{"n":"글로벌인재","q":51,"m":"1단계)서류100%(3.5배수) 2단계)서류70%+면접30%","iv":30},{"n":"기초생활(연세한마음)","q":30,"m":"서류100%(의예:서류80%+면접20%)","iv":20,"mn":"의예과만: 4개합6,영어2등급"},{"n":"농어촌학생","q":35,"m":"서류100%(의예:서류80%+면접20%)","iv":20,"mn":"의예과만: 4개합6,영어2등급"},{"n":"특성화고교졸업자","q":12,"m":"서류100%"}]},{"nm":"우송대학교","rg":"충청","lc":"대전","tp":"사립","pg":[{"n":"종합서류형","q":182,"m":"서류100%","cr":7.96},{"n":"종합면접형","q":132,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30,"cr":10.33},{"n":"지역인재Ⅱ(기초/차상위)","q":2,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"울산대학교","rg":"동남","lc":"울산","tp":"사립","pg":[{"n":"잠재역량","q":474,"m":"서류100%(자율전공/간호/의예:1단계서류100%(4배수)2단계서류50%+면접50%)","iv":50,"mn":"의예과만: 수학(미/기)포함3개합4,한국사4등급","dept":[{"d":"의예과","q":22,"cr":45.8},{"d":"간호학과","q":15,"cr":12.3}],"grades":{"자연":{"avg":4.75,"fill":28}}},{"n":"지역인재","q":478,"m":"서류100%(의예:1단계서류100%(4배수)2단계서류50%+면접50%)","iv":50,"mn":"의예과만: 수학(미/기)포함3개합4,한국사4등급"},{"n":"지역인재(기초생활및차상위)","q":6,"m":"서류100%(의예:1단계서류100%(4배수)2단계서류50%+면접50%)","iv":50,"mn":"의예과만: 수학(미/기)포함3개합4,한국사4등급"}]},{"nm":"원광대학교","rg":"호남","lc":"전북","tp":"사립","pg":[{"n":"학생부종합","q":853,"m":"서류100%(의/치/한/약/한약/원불교:1단계서류100%(5배수)2단계서류70%+면접30%)","iv":30,"mn":"의/치/한(자연):수학포함3개합6/약학:수학포함3개합7/한약학:3개합9/간호:3개합12","dept":[{"d":"의예과","q":20,"cr":28.5},{"d":"치의예과","q":10,"cr":22.3},{"d":"한의예과","q":15,"cr":18.4},{"d":"약학과","q":12,"cr":15.6},{"d":"한약학과","q":8,"cr":12.3},{"d":"간호학과","q":25,"cr":8.9}],"grades":{"인문":{"avg":4.62,"fill":170},"자연":{"avg":4.54,"fill":151}}},{"n":"지역인재종합","q":302,"m":"서류100%(의/치/한/약/한약:1단계서류100%(4배수)2단계서류70%+면접30%)","iv":30,"mn":"의/치/한(자연):수학포함3개합6/약학:수학포함3개합7/한약학:3개합9/간호:3개합12"},{"n":"지역인재기회균형","q":13,"m":"서류100%(의/치/한/약/한약:1단계서류100%(5배수)2단계서류70%+면접30%)","iv":30,"mn":"적용"},{"n":"기회균형","q":43,"m":"서류100%(의/치/한/약/한약:1단계서류100%(5배수)2단계서류70%+면접30%)","iv":30},{"n":"농어촌학생","q":112,"m":"서류100%(의/치/한/약/한약:1단계서류100%(5배수)2단계서류70%+면접30%)","iv":30}]},{"nm":"을지대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"EU면접형","q":123,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30},{"n":"EU서류형","q":102,"m":"서류100%"},{"n":"지역의료인재(특별형)","q":3,"m":"서류100%","mn":"의예과: 탐구포함2개합4"},{"n":"기회균형(종합)","q":52,"m":"서류100%"}]},{"nm":"이화여자대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"미래인재(서류형)","q":909,"m":"서류100%","mn":"인문:국어포함2개합5/자연:수학포함2개합5/의예:4개합5/약학:4개합6/스크랜튼:3개합5","dept":[{"d":"의예과","q":18,"cr":52.3},{"d":"약학전공","q":12,"cr":35.8},{"d":"컴퓨터공학과","q":15,"cr":22.4},{"d":"간호학과","q":20,"cr":14.6},{"d":"경영학과","q":25,"cr":12.8}],"grades":{"인문":{"avg":2.59,"fill":56},"자연":{"avg":1.93,"fill":53}}},{"n":"미래인재(면접형)","q":209,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30},{"n":"고른기회","q":164,"m":"서류100%"},{"n":"사회기여자","q":16,"m":"서류100%"}]},{"nm":"인천대학교","rg":"경인","lc":"인천","tp":"국립","pg":[{"n":"자기추천","q":694,"m":"1단계)서류100%(3~4배수) 2단계)서류70%+면접30%","iv":30,"cr":10.7,"grades":{"인문":{"avg":3.6,"fill":70},"자연":{"avg":3.34,"fill":60}}},{"n":"기회균형","q":110,"m":"서류100%"},{"n":"서해5도출신자","q":6,"m":"서류100%"},{"n":"특수교육대상자","q":48,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"인하대학교","rg":"경인","lc":"인천","tp":"사립","pg":[{"n":"인하미래인재(면접형)","q":935,"m":"1단계)서류100%(3~3.5배수) 2단계)서류70%+면접30%","iv":30,"cr":13.48,"dept":[{"d":"의예과","q":18,"cr":52.3},{"d":"컴퓨터공학과","q":25,"cr":18.6},{"d":"전자공학과","q":20,"cr":14.8},{"d":"경영학과","q":30,"cr":12.4}],"grades":{"인문":{"avg":3.03,"fill":71},"자연":{"avg":2.71,"fill":67}}},{"n":"인하미래인재(서류형)","q":252,"m":"서류100%"},{"n":"고른기회","q":137,"m":"서류100%"},{"n":"평생학습자","q":13,"m":"서류100%"},{"n":"특성화고졸재직자","q":194,"m":"서류100%"},{"n":"농어촌학생","q":141,"m":"서류100%"},{"n":"서해5도지역출신자","q":3,"m":"서류100%"}]},{"nm":"장로회신학대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"드림(PUTS인재)","q":32,"m":"서류60%+면접40%","iv":40},{"n":"사회기여및배려자","q":22,"m":"서류60%+면접40%","iv":40},{"n":"대안학교","q":6,"m":"학생부40%+면접30%+서류30%","iv":30},{"n":"농어촌및도서벽지지역","q":6,"m":"서류60%+면접40%","iv":40},{"n":"기회균형선발제","q":2,"m":"서류60%+면접40%","iv":40},{"n":"특수교육대상자","q":6,"m":"서류60%+면접40%","iv":40}]},{"nm":"전남대학교","rg":"호남","lc":"광주","tp":"국립","pg":[{"n":"고교생활우수자Ⅰ","q":907,"m":"1단계)서류100%(3배수/의학계열:6배수) 2단계)서류70%+면접30%","iv":30,"mn":"의예:수학포함3개합5/치의:수학포함3개합6/약학,수의예:3개합7","cr":7.55,"dept":[{"d":"의예과","q":30,"cr":22.3},{"d":"치의예과","q":10,"cr":18.5},{"d":"약학과","q":15,"cr":16.2},{"d":"수의예과","q":10,"cr":14.8},{"d":"간호학과","q":20,"cr":8.5}],"grades":{"인문":{"avg":3.5,"fill":57},"자연":{"avg":3.33,"fill":45}}},{"n":"후계농업경영인","q":5,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30},{"n":"고교생활우수자Ⅱ","q":172,"m":"서류100%"},{"n":"조기취업형 계약학과","q":70,"m":"서류60%+면접40%","iv":40}]},{"nm":"전북대학교","rg":"호남","lc":"전북","tp":"국립","pg":[{"n":"큰사람","q":502,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20,"mn":"의/치/수의예,약학,간호만: 의예4개합6/치의:수학포함3개합6/수의,약학:수학포함3개합7/간호:2개합6","cr":11.71,"dept":[{"d":"의예과","q":20,"cr":35.6},{"d":"치의예과","q":8,"cr":28.3},{"d":"수의예과","q":10,"cr":22.1},{"d":"약학과","q":12,"cr":18.5},{"d":"간호학과","q":15,"cr":12.8}],"grades":{"인문":{"avg":3.9,"fill":88},"자연":{"avg":3.27,"fill":84}}},{"n":"지역인재1유형(호남권)","q":100,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20,"mn":"의/치/수의예,약학,간호만 적용"},{"n":"지역인재2유형(전북권)","q":6,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20,"mn":"의예:4개합6/수의예:수학포함3개합7"},{"n":"SW인재","q":5,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20},{"n":"사회통합","q":11,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20},{"n":"국가보훈대상자","q":26,"m":"서류100%"},{"n":"농어촌학생","q":121,"m":"서류100%"},{"n":"기회균형선발","q":77,"m":"서류100%"},{"n":"특수교육대상자","q":14,"m":"서류100%"},{"n":"특성화고졸재직자","q":96,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20}]},{"nm":"제주대학교","rg":"제주","lc":"제주","tp":"국립","pg":[{"n":"일반학생","q":235,"m":"서류100%(사범대/초등교육/약학/수의예/간호:1단계서류100%(3배수)2단계서류70%+면접30%)","iv":30,"cr":8.01,"grades":{"인문":{"avg":4.85,"fill":72},"자연":{"avg":4.57,"fill":112}}},{"n":"지역인재","q":47,"m":"1단계)서류100%(3~5배수) 2단계)서류70%+면접30%","iv":30},{"n":"사회통합","q":53,"m":"서류100%"},{"n":"고른기회","q":119,"m":"서류100%"},{"n":"농어촌학생","q":85,"m":"서류100%"},{"n":"특수교육대상자","q":57,"m":"서류100%"},{"n":"평생학습자","q":71,"m":"서류100%"}]},{"nm":"조선대학교","rg":"호남","lc":"광주","tp":"사립","pg":[{"n":"면접전형","q":248,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30,"mn":"의예/치의예:수학포함3개합5/약학:수학포함3개합6","cr":6.75,"dept":[{"d":"의예과","q":15,"cr":18.5},{"d":"치의예과","q":8,"cr":15.2},{"d":"약학과","q":10,"cr":12.4}],"grades":{"인문":{"avg":5.09,"fill":36},"자연":{"avg":4.3,"fill":54}}},{"n":"서류전형","q":1127,"m":"서류100%","mn":"의예/치의예:수학포함3개합5/약학:수학포함3개합6","cr":3.46,"grades":{"인문":{"avg":5.51,"fill":104}}},{"n":"농어촌학생","q":103,"m":"서류100%","mn":"의예/치의예:수학포함3개합6/약학:수학포함3개합7"}]},{"nm":"중앙대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"성장형인재","q":108,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30,"mn":"서울:3개합6,한국사4등급/약학:4개합5/의학:4개합5","dept":[{"d":"의학부","q":16,"cr":65.5,"officialRec":{"field":"의학","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":["화학Ⅰ","생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계"],"recSci":["물리학Ⅰ","화학Ⅱ"]}},{"d":"약학부","q":12,"cr":38.2,"officialRec":{"field":"약학","coreMath":["수학Ⅰ","수학Ⅱ","미적분"],"coreSci":["화학Ⅰ","생명과학Ⅰ","생명과학Ⅱ"],"recMath":["확률과통계","기하"],"recSci":["화학Ⅱ"]}}]},{"n":"융합형인재","q":350,"m":"서류100%(의학부:1단계서류100%(3.5배수)2단계서류70%+면접30%)","iv":30,"grades":{"인문":{"avg":2.51,"fill":93},"자연":{"avg":2.25,"fill":140}}},{"n":"탐구형인재","q":485,"m":"1단계)서류100%(3.5~5배수) 2단계)서류70%+면접30%","iv":30,"dept":[{"d":"소프트웨어학부","q":20,"cr":22.3},{"d":"전자전기공학부","q":18,"cr":16.8},{"d":"경영학부","q":25,"cr":14.5}],"grades":{"인문":{"avg":3.28,"fill":81},"자연":{"avg":3.18,"fill":129}}},{"n":"어울림","q":20,"m":"서류100%"},{"n":"농어촌학생","q":141,"m":"서류100%"},{"n":"기초생활수급자","q":74,"m":"서류100%"},{"n":"특성화고졸재직자","q":231,"m":"서류100%"}]},{"nm":"차의과학대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"CHA학생부종합","q":162,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"mn":"약학과만: 수학포함3개합6"},{"n":"사회통합","q":30,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"농어촌학생","q":20,"m":"서류100%","mn":"약학과만: 수학포함3개합7"},{"n":"기회균등","q":7,"m":"서류100%","mn":"약학과만: 수학포함3개합7"}]},{"nm":"총신대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"코람데오인재","q":120,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"총신고른기회","q":27,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"목회자추천자","q":22,"m":"서류70%+면접30%","iv":30},{"n":"대안학교출신자","q":11,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"특수교육대상자","q":20,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"충남대학교","rg":"충청","lc":"대전","tp":"국립","pg":[{"n":"면접","q":429,"m":"1단계)서류100%(2~3배수) 2단계)서류67%+면접33%","iv":33,"mn":"사범대(국어/영어/교육학):3개합10/의예:수학포함3개합5/수의예:수학포함3개합7/간호:3개합12","cr":11.49,"dept":[{"d":"의예과","q":25,"cr":32.4},{"d":"수의예과","q":8,"cr":22.1},{"d":"간호학과","q":15,"cr":14.6}],"grades":{"인문":{"avg":3.6,"fill":51},"자연":{"avg":3.19,"fill":52}}},{"n":"서류","q":278,"m":"서류100%","mn":"의예:수학포함3개합5/수의예:수학포함3개합7/약학:수학포함3개합6/간호:3개합12","cr":10.63,"grades":{"인문":{"avg":3.53,"fill":121},"자연":{"avg":3.0,"fill":121}}},{"n":"소프트웨어인재","q":4,"m":"1단계)서류100%(3배수) 2단계)서류67%+면접33%","iv":33},{"n":"영농창업인재","q":12,"m":"1단계)서류100%(2배수) 2단계)서류67%+면접33%","iv":33},{"n":"지역인재(종합)","q":30,"m":"1단계)서류100%(3배수) 2단계)서류67%+면접33%","iv":33,"mn":"의예과: 수학포함3개합5"},{"n":"기회균형선발Ⅱ","q":36,"m":"1단계)서류100%(2배수) 2단계)서류67%+면접33%","iv":33},{"n":"농어촌학생","q":118,"m":"1단계)서류100%(3배수) 2단계)서류67%+면접33%","iv":33},{"n":"저소득층","q":70,"m":"1단계)서류100%(3배수) 2단계)서류67%+면접33%","iv":33},{"n":"특수교육대상자","q":88,"m":"1단계)서류100%(3배수) 2단계)서류67%+면접33%","iv":33},{"n":"특성화고졸재직자","q":30,"m":"1단계)서류100%(2배수) 2단계)서류67%+면접33%","iv":33}]},{"nm":"충북대학교","rg":"충청","lc":"충북","tp":"국립","pg":[{"n":"학생부종합Ⅰ","q":537,"m":"서류100%","cr":11.53,"grades":{"인문":{"avg":3.33,"fill":162},"자연":{"avg":3.2,"fill":155}}},{"n":"학생부종합Ⅱ","q":391,"m":"서류100%","mn":"교과별 차등: 의예:수학포함3개합5/약학:수학포함3개합7/수의예:3개합8/간호:2개합6 등","cr":9.69,"grades":{"인문":{"avg":3.68,"fill":82},"자연":{"avg":3.44,"fill":73}}},{"n":"SW우수인재","q":13,"m":"서류100%"},{"n":"농어촌학생","q":123,"m":"서류100%"}]},{"nm":"평택대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"PTU종합","q":73,"m":"서류100%"}]},{"nm":"포항공과대학교","rg":"대경","lc":"경북","tp":"특수","pg":[{"n":"일반전형Ⅰ","q":220,"m":"1단계)서류100%(3배수) 2단계)서류50%+면접50%","iv":50,"dept":[{"d":"컴퓨터공학과","q":25,"cr":12.5},{"d":"전자전기공학과","q":25,"cr":10.8},{"d":"기계공학과","q":20,"cr":8.9},{"d":"화학공학과","q":18,"cr":7.6},{"d":"물리학과","q":15,"cr":6.4},{"d":"생명과학과","q":15,"cr":7.2}]},{"n":"일반전형Ⅱ","q":70,"m":"1단계)서류100%(3배수) 2단계)서류67%+면접33%","iv":33,"mn":"수학(미/기)포함2개합4"},{"n":"반도체공학인재","q":40,"m":"1단계)서류100%(3배수) 2단계)서류50%+면접50%","iv":50},{"n":"지역인재","q":20,"m":"서류100%"},{"n":"기회균형통합","q":10,"m":"서류100%"},{"n":"저소득층","q":10,"m":"서류100%"}]},{"nm":"한경국립대학교","rg":"경인","lc":"경기","tp":"국립","pg":[{"n":"잠재력우수자","q":275,"m":"서류100%","cr":8.09},{"n":"사회통합","q":61,"m":"서류100%"}]},{"nm":"한국공학대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"창의인재","q":256,"m":"1단계)서류100%(4배수) 2단계)서류60%+면접40%","iv":40,"cr":8.85},{"n":"융합인재","q":47,"m":"서류100%"},{"n":"기회균형","q":58,"m":"서류100%"},{"n":"특성화고졸재직자","q":78,"m":"서류100%"},{"n":"조기취업형계약학과","q":120,"m":"1단계)서류100%(5배수) 2단계)면접100%","iv":100}]},{"nm":"한국교원대학교","rg":"충청","lc":"충북","tp":"국립","pg":[{"n":"학생부종합우수자","q":318,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20,"mn":"4개영역등급합14(초등/불어교육X)","cr":5.18},{"n":"사회통합","q":17,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20},{"n":"농어촌학생","q":11,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20},{"n":"기초생활수급자","q":19,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20},{"n":"장애인등대상자","q":26,"m":"1단계)서류100%(3배수) 2단계)서류80%+면접20%","iv":20}]},{"nm":"한국교통대학교","rg":"충청","lc":"충북","tp":"국립","pg":[{"n":"학생부종합Ⅰ","q":21,"m":"1단계)서류100%(7배수) 2단계)서류60%+면접40%","iv":40},{"n":"학생부종합Ⅱ","q":548,"m":"서류100%"}]},{"nm":"한국기술교육대학교","rg":"충청","lc":"충남","tp":"국립","pg":[{"n":"창의인재(서류형)","q":124,"m":"서류100%"},{"n":"창의인재(면접형)","q":110,"m":"1단계)서류100%(4배수) 2단계)서류60%+면접40%","iv":40},{"n":"사회통합","q":25,"m":"서류100%"},{"n":"농어촌학생","q":33,"m":"서류100%"},{"n":"특수교육대상자","q":5,"m":"서류100%"}]},{"nm":"한국외국어대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"면접형","q":487,"m":"1단계)서류100%(3배수) 2단계)서류50%+면접50%","iv":50,"grades":{"인문":{"avg":3.24,"fill":58},"자연":{"avg":2.55,"fill":75}}},{"n":"서류형","q":575,"m":"서류100%","grades":{"인문":{"avg":2.8,"fill":103},"자연":{"avg":2.21,"fill":13}}},{"n":"SW인재","q":34,"m":"서류100%"},{"n":"기회균형","q":188,"m":"서류100%"}]},{"nm":"한국항공대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"미래인재","q":146,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30,"cr":8.75},{"n":"고른기회","q":44,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"한남대학교","rg":"충청","lc":"대전","tp":"사립","pg":[{"n":"한남인재Ⅰ(서류)","q":477,"m":"서류100%"},{"n":"한남인재Ⅱ(서류+면접)","q":64,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30},{"n":"창업인재","q":5,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"한동대학교","rg":"대경","lc":"경북","tp":"사립","pg":[{"n":"G-IMPACT인재","q":213,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30,"grades":{"인문":{"avg":3.33,"fill":49}}},{"n":"SW인재","q":7,"m":"1단계)서류100%(2.5배수) 2단계)서류50%+면접50%","iv":50},{"n":"대안학교","q":80,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30},{"n":"글로벌인재","q":65,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30},{"n":"선교사목회자자녀","q":50,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30},{"n":"사회통합","q":40,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30},{"n":"기초생활및차상위","q":17,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30,"mn":"2개합8 또는 1개3등급"},{"n":"장애인등대상자","q":3,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"한라대학교","rg":"강원","lc":"강원","tp":"사립","pg":[{"n":"운곡인재","q":94,"m":"서류100%"}]},{"nm":"한림대학교","rg":"강원","lc":"강원","tp":"사립","pg":[{"n":"학교생활우수자","q":554,"m":"1단계)서류100%(4배수) 2단계)서류70%+면접30%","iv":30,"mn":"의학과만: 수학(미/기)포함3개합4","cr":5.77,"grades":{"인문":{"avg":5.23,"fill":35},"자연":{"avg":4.88,"fill":46}}},{"n":"지역인재","q":42,"m":"1단계)서류100%(4~5배수) 2단계)서류70%+면접30%","iv":30,"mn":"의학과만: 수학(미/기)포함3개합5"},{"n":"지역인재(기초생활)","q":3,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30},{"n":"농어촌학생","q":3,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"한밭대학교","rg":"충청","lc":"대전","tp":"국립","pg":[{"n":"학생부종합(일반)","q":238,"m":"서류100%","cr":7.98},{"n":"학생부종합(학석사)","q":92,"m":"서류100%"},{"n":"지역인재(종합)","q":138,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30,"cr":6.63},{"n":"소프트웨어인재","q":9,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30},{"n":"특수교육대상자","q":10,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30},{"n":"학생부종합(야간)","q":70,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30},{"n":"특성화고졸재직자(야)","q":82,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"한서대학교","rg":"충청","lc":"충남","tp":"사립","pg":[{"n":"융합인재","q":27,"m":"서류100%"}]},{"nm":"한성대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"한성인재","q":310,"m":"서류100%","cr":10.67,"grades":{"인문":{"avg":3.16,"fill":66},"자연":{"avg":3.44,"fill":68}}},{"n":"고른기회","q":45,"m":"서류100%"},{"n":"성인학습자","q":40,"m":"서류100%"},{"n":"농어촌학생","q":54,"m":"서류100%"},{"n":"특성화고졸재직자","q":80,"m":"서류100%"}]},{"nm":"한세대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"한세인재","q":60,"m":"서류100%"}]},{"nm":"한양대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"추천형(종합)","q":291,"m":"학생부종합평가100%","mn":"3개합7/의예:3개합4","dept":[{"d":"의예과","q":12,"cr":35.6},{"d":"컴퓨터소프트웨어학부","q":15,"cr":22.4},{"d":"전기공학전공","q":12,"cr":18.3},{"d":"경영학부","q":15,"cr":16.5}],"grades":{"인문":{"avg":3.1,"fill":126},"자연":{"avg":2.48,"fill":104}}},{"n":"서류형","q":481,"m":"학생부종합평가100%","dept":[{"d":"컴퓨터소프트웨어학부","q":20,"cr":28.7},{"d":"인공지능학과","q":10,"cr":32.5},{"d":"전기공학전공","q":15,"cr":22.1},{"d":"화학공학과","q":12,"cr":18.6}],"grades":{"인문":{"avg":2.97,"fill":146},"자연":{"avg":2.54,"fill":252}}},{"n":"면접형","q":136,"m":"1단계)학생부종합평가100%(7배수) 2단계)1단계70%+면접30%","iv":30,"grades":{"인문":{"avg":2.52,"fill":119},"자연":{"avg":2.72,"fill":167}}},{"n":"고른기회","q":113,"m":"학생부종합평가100%"},{"n":"사회통합","q":5,"m":"학생부종합평가100%"},{"n":"특성화고졸재직자","q":154,"m":"학생부종합평가100%"}]},{"nm":"한양대학교(ERICA)","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"서류형","q":468,"m":"학생부종합평가100%","cr":20.93,"grades":{"인문":{"avg":3.18,"fill":109},"자연":{"avg":3.51,"fill":37}}},{"n":"면접형","q":60,"m":"1단계)학생부종합평가100%(3배수) 2단계)1단계70%+면접30%","iv":30,"grades":{"인문":{"avg":3.71,"fill":23}}},{"n":"고른기회","q":84,"m":"학생부종합평가100%"},{"n":"체육인재","q":15,"m":"학생부종합평가100%"},{"n":"특성화고졸재직자","q":111,"m":"학생부종합평가100%"},{"n":"국방전략기술공학","q":37,"m":"1단계)학생부종합평가100%(3배수) 2단계)학생부종합평가70%+면접15%+체력검정15%","iv":15},{"n":"조기취업형계약학과","q":150,"m":"1단계)학생부종합평가100%(4배수) 2단계)1단계10%+기업체면접90%","iv":90}]},{"nm":"협성대학교","rg":"경인","lc":"경기","tp":"사립","pg":[{"n":"융합인재Ⅰ","q":112,"m":"서류100%"},{"n":"융합인재Ⅱ","q":103,"m":"1단계)서류100%(4배수) 2단계)서류50%+면접50%","iv":50}]},{"nm":"호서대학교","rg":"충청","lc":"충남","tp":"사립","pg":[{"n":"호서인재","q":380,"m":"서류100%"},{"n":"조기취업형계약학과","q":65,"m":"1단계)서류100%(5배수) 2단계)서류10%+면접90%","iv":90}]},{"nm":"홍익대학교","rg":"서울","lc":"서울","tp":"사립","pg":[{"n":"학교생활우수자(서울)","q":467,"m":"서류100%","mn":"2개합5,한국사4등급","dept":[{"d":"컴퓨터공학과","q":12,"cr":18.4},{"d":"전자전기공학부","q":15,"cr":14.2},{"d":"경영학부","q":18,"cr":12.6}],"grades":{"인문":{"avg":2.77,"fill":102},"자연":{"avg":2.31,"fill":60}}},{"n":"고른기회Ⅰ(서울)","q":15,"m":"서류100%"},{"n":"고른기회Ⅱ(서울)","q":10,"m":"서류100%"},{"n":"기초생활수급자(서울)","q":30,"m":"서류100%"},{"n":"특성화고졸재직자(서울)","q":185,"m":"서류100%"}]},{"nm":"홍익대학교(세종)","rg":"충청","lc":"세종","tp":"사립","pg":[{"n":"학교생활우수자(세종)","q":199,"m":"서류100%"},{"n":"고른기회Ⅰ(세종)","q":10,"m":"서류100%"},{"n":"고른기회Ⅱ(세종)","q":6,"m":"서류100%"},{"n":"기초생활수급자(세종)","q":14,"m":"서류100%"}]},{"nm":"경인교육대학교","rg":"경인","lc":"인천","tp":"국립","pg":[{"n":"교직적성","q":225,"m":"서류70%+면접30%","iv":30,"cr":9.71},{"n":"국가보훈대상자","q":4,"m":"서류70%+면접30%","iv":30},{"n":"저소득층학생","q":18,"m":"서류70%+면접30%","iv":30},{"n":"농어촌학생","q":21,"m":"서류70%+면접30%","iv":30},{"n":"장애인학생","q":20,"m":"서류70%+면접30%","iv":30}]},{"nm":"공주교육대학교","rg":"충청","lc":"충남","tp":"국립","pg":[{"n":"교직적성인재","q":25,"m":"서류100%"},{"n":"지역인재선발","q":123,"m":"서류100%"},{"n":"국가보훈대상자","q":5,"m":"서류100%"},{"n":"농어촌학생","q":14,"m":"서류100%"},{"n":"기회균형선발","q":5,"m":"서류100%"},{"n":"장애인등대상자","q":5,"m":"서류100%"}]},{"nm":"광주교육대학교","rg":"호남","lc":"광주","tp":"국립","pg":[{"n":"교직적성우수자","q":53,"m":"서류70%+면접30%","iv":30},{"n":"전남교육감추천","q":60,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30},{"n":"지역인재","q":50,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30},{"n":"농어촌학생","q":7,"m":"서류70%+면접30%","iv":30},{"n":"기초/차상위/한부모","q":10,"m":"서류70%+면접30%","iv":30},{"n":"사회통합","q":7,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"만학도","q":10,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"장애인대상자","q":10,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"대구교육대학교","rg":"대경","lc":"대구","tp":"국립","pg":[{"n":"참스승","q":50,"m":"1단계)서류100%(5배수) 2단계)서류70%+면접30%","iv":30,"cr":12.05},{"n":"대구지역인재","q":90,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30},{"n":"경북지역인재","q":127,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30},{"n":"다문화가족","q":3,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30},{"n":"국가보훈대상자","q":6,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30},{"n":"농어촌학생","q":15,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"장애인등대상자","q":10,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30},{"n":"만학도","q":15,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"부산교육대학교","rg":"동남","lc":"부산","tp":"국립","pg":[{"n":"초등교직적성자","q":65,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40,"cr":9.5},{"n":"지역인재","q":125,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40},{"n":"국가보훈대상자","q":3,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40},{"n":"농어촌학생","q":12,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40},{"n":"장애인등대상자","q":12,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40},{"n":"저소득층학생","q":5,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40}]},{"nm":"서울교육대학교","rg":"서울","lc":"서울","tp":"국립","pg":[{"n":"교직인성우수자","q":150,"m":"1단계)서류100%(2배수) 2단계)서류50%+면접50%","iv":50,"mn":"2개합6,한국사4등급"},{"n":"국가보훈대상자","q":5,"m":"1단계)서류100%(2배수) 2단계)서류50%+면접50%","iv":50,"mn":"2개합8,한국사4등급"},{"n":"농어촌학생","q":10,"m":"1단계)서류100%(2배수) 2단계)서류50%+면접50%","iv":50,"mn":"2개합8,한국사4등급"},{"n":"기초생활수급자등","q":19,"m":"1단계)서류100%(2배수) 2단계)서류50%+면접50%","iv":50,"mn":"2개합8,한국사4등급"},{"n":"장애인등대상자","q":11,"m":"1단계)서류100%(2배수) 2단계)서류50%+면접50%","iv":50,"mn":"2개합8,한국사4등급"}]},{"nm":"전주교육대학교","rg":"호남","lc":"전북","tp":"국립","pg":[{"n":"교직적성우수자","q":48,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"지역인재선발","q":114,"m":"1단계)서류100%(3배수) 2단계)서류70%+면접30%","iv":30},{"n":"국가보훈대상자","q":5,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30},{"n":"농어촌학생","q":11,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30},{"n":"장애인등대상자","q":8,"m":"1단계)서류100%(2배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"진주교육대학교","rg":"동남","lc":"경남","tp":"국립","pg":[{"n":"21세기형교직적성자","q":50,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30},{"n":"지역인재","q":123,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30},{"n":"농어촌학생","q":12,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30},{"n":"기회균형","q":5,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30},{"n":"장애인등대상자","q":12,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30},{"n":"만학도","q":20,"m":"1단계)서류100%(2.5배수) 2단계)서류70%+면접30%","iv":30}]},{"nm":"청주교육대학교","rg":"충청","lc":"충북","tp":"국립","pg":[{"n":"배움나눔인재","q":42,"m":"서류100%"},{"n":"지역인재","q":132,"m":"1단계)서류100%(2배수) 2단계)서류60%+면접40%","iv":40},{"n":"국가보훈대상자","q":5,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40},{"n":"농어촌학생","q":7,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40},{"n":"기회균형선발","q":10,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40},{"n":"장애인등대상자","q":8,"m":"1단계)서류100%(3배수) 2단계)서류60%+면접40%","iv":40}]},{"nm":"춘천교육대학교","rg":"강원","lc":"강원","tp":"국립","pg":[{"n":"교직적인성인재","q":96,"m":"서류100%","mn":"3개합9,한국사4등급"},{"n":"강원교육인재","q":60,"m":"서류100%","mn":"3개합12,한국사4등급"},{"n":"국가보훈대상자","q":4,"m":"서류100%","mn":"3개합12,한국사4등급"},{"n":"농어촌학생","q":12,"m":"서류100%","mn":"3개합12,한국사4등급"},{"n":"기초생활수급자","q":5,"m":"서류100%","mn":"3개합12,한국사4등급"},{"n":"특수교육대상자","q":5,"m":"서류100%","mn":"3개합14,한국사4등급"}]},{"nm":"DGIST","rg":"대경","lc":"대구","tp":"특수","pg":[{"n":"일반전형","q":115,"m":"서류100%","cr":20.37},{"n":"학교장추천","q":77,"m":"서류100%","cr":23.6},{"n":"고른기회","q":20,"m":"서류100%"}]},{"nm":"GIST","rg":"호남","lc":"광주","tp":"특수","pg":[{"n":"일반전형","q":150,"m":"1단계)서류100%(6배수) 2단계)서류60%+면접40%","iv":40,"cr":11.51},{"n":"학교장추천","q":40,"m":"1단계)서류100%(5배수) 2단계)서류60%+면접40%","iv":40},{"n":"고른기회","q":15,"m":"1단계)서류100%(5배수) 2단계)서류60%+면접40%","iv":40}]},{"nm":"KAIST","rg":"충청","lc":"대전","tp":"특수","pg":[{"n":"창의도전","q":200,"m":"서류100%","cr":8.29},{"n":"학교장추천","q":85,"m":"서류100%","cr":9.62},{"n":"일반전형","q":350,"m":"1단계)서류100%(2.5배수) 2단계)서류40%+면접60%","iv":60,"cr":6.62,"dept":[{"d":"전산학부","q":40,"cr":8.2},{"d":"전기및전자공학부","q":45,"cr":7.5},{"d":"기계공학과","q":35,"cr":6.2},{"d":"생명과학과","q":20,"cr":5.8},{"d":"물리학과","q":18,"cr":5.3},{"d":"화학과","q":15,"cr":4.8},{"d":"수리과학과","q":15,"cr":5.1}],"grades":{"자연":{"avg":1.95,"fill":13}}},{"n":"반도체시스템인재Ⅰ","q":30,"m":"서류100%"},{"n":"반도체시스템인재Ⅱ","q":70,"m":"1단계)서류100%(2.5배수) 2단계)서류40%+면접60%","iv":60},{"n":"고른기회","q":60,"m":"1단계)서류100%(2배수) 2단계)서류40%+면접60%","iv":60}]},{"nm":"KENTECH","rg":"호남","lc":"전남","tp":"특수","pg":[{"n":"일반전형","q":90,"m":"1단계)서류100%(5배수) 2단계)서류50%+창의성면접50%","iv":50,"cr":15.06},{"n":"고른기회(농어촌)","q":7,"m":"1단계)서류100%(5배수) 2단계)서류50%+창의성면접50%","iv":50},{"n":"고른기회(저소득)","q":3,"m":"1단계)서류100%(5배수) 2단계)서류50%+창의성면접50%","iv":50}]},{"nm":"UNIST","rg":"동남","lc":"울산","tp":"특수","pg":[{"n":"일반전형","q":310,"m":"서류100%","cr":13.33},{"n":"지역인재","q":65,"m":"서류100%","cr":6.31},{"n":"탐구우수","q":50,"m":"1단계)서류100%(2배수) 2단계)서류50%+면접50%","iv":50},{"n":"고른기회","q":40,"m":"서류100%"}]}];
+const OFFICIAL_REC = {"수학":{"core":["기하","미적분Ⅱ"],"rec":["확률과통계"],"depts":["수학과","응용수학과","수학교육과","통계학과","응용통계학과"]},"컴퓨터":{"core":["미적분Ⅱ"],"rec":["기하","확률과통계","인공지능기초"],"depts":["소프트웨어융합학과","컴퓨터공학부","인공지능학과","데이터과학과","사이버국방학과"]},"산업":{"core":["확률과통계","미적분Ⅱ"],"rec":[],"depts":["산업경영공학과","시스템경영공학과","산업공학과"]},"물리":{"core":["물리학Ⅱ","기하","미적분Ⅱ"],"rec":["화학Ⅱ","확률과통계"],"depts":["물리학과","응용물리학과"]},"기계":{"core":["물리학Ⅱ","기하","미적분Ⅱ"],"rec":["화학Ⅱ","확률과통계"],"depts":["기계공학과","기계공학부"]},"전기전자":{"core":["물리학Ⅱ","기하","미적분Ⅱ"],"rec":["화학Ⅱ","확률과통계"],"depts":["전자공학과","전기전자공학부","반도체공학과","반도체시스템공학과","시스템반도체공학과"]},"건설건축":{"core":["미적분Ⅱ"],"rec":["물리학Ⅱ","기하","확률과통계"],"depts":["건축공학과","건축학과","사회기반시스템공학과","건설환경공학부","도시공학과"]},"화학":{"core":["화학Ⅱ","미적분Ⅱ"],"rec":["생명과학Ⅱ","물리학Ⅱ","기하","확률과통계"],"depts":["화학과","응용화학과"]},"재료화공에너지":{"core":["물리학Ⅱ","화학Ⅱ","미적분Ⅱ"],"rec":["기하","확률과통계"],"depts":["화학공학과","신소재공학부","원자력공학과","나노공학과","화공생명공학부"]},"생명과학환경":{"core":["생명과학Ⅱ","화학Ⅱ","미적분Ⅱ"],"rec":["물리학Ⅱ","확률과통계"],"depts":["생물학과","생명과학부","생명공학과","식품생명공학과","식품영양학과"]},"천문지구":{"core":["지구과학Ⅱ","물리학Ⅱ","미적분Ⅱ"],"rec":["화학Ⅱ","기하","확률과통계"],"depts":["우주과학과","지구환경과학과","대기과학과","지구시스템과학과","천문우주학과"]},"의학":{"core":["생명과학Ⅱ","화학Ⅱ","미적분Ⅱ"],"rec":["물리학Ⅱ","확률과통계"],"depts":["의예과","한의예과","치의예과","의학과","의학부"]},"약학":{"core":["생명과학Ⅱ","화학Ⅱ","미적분Ⅱ"],"rec":["기하","확률과통계"],"depts":["약과학과","약학과","한약학과","약학부"]},"간호보건":{"core":["생명과학Ⅱ","미적분Ⅱ"],"rec":["화학Ⅱ","확률과통계"],"depts":["간호학과","바이오의공학부","보건환경융합과학부","바이오시스템의과학부"]}};
+
+let UNIV_DB = BUILTIN_DB;
+let dbMeta = JSON.parse(localStorage.getItem('admDBMeta') || 'null') || {version:'내장DB',date:'2026-05-15',source:'2027 한눈에보는전형 PDF 1~7',count:BUILTIN_DB.length};
+
+const SUBJECT_GROUPS = [
+  {label:'수학',subjects:['미적분Ⅱ','기하','확률과통계','수학과제탐구','실용통계']},
+  {label:'과학',subjects:['물리학Ⅱ','화학Ⅱ','생명과학Ⅱ','지구과학Ⅱ','역학과에너지','물질과에너지','화학반응의세계','세포와물질대사','생물의유전','지구시스템과학','행성우주과학']},
+  {label:'사회',subjects:['정치와법','경제','사회문화','세계사','동아시아사','세계지리','한국지리','윤리와사상','사회문제탐구','국제관계와국제기구']},
+  {label:'기술·정보',subjects:['인공지능기초','정보과학','데이터과학','소프트웨어와생활','공학일반','로봇과공학세계']},
+  {label:'인문·예술',subjects:['심리학','교육학','논리학','철학','음악이론','미술창작','체육과진로탐구','스포츠생활']},
+  {label:'외국어',subjects:['영어Ⅱ','영어독해와작문','영미문학읽기','일본어','중국어','프랑스어','독일어']}
+];
+
+const MAJORS=[
+  {id:'med',name:'의예과',field:'의약',desc:'임상의학 전 분야',rec:['화학Ⅱ','생명과학Ⅱ','물리학Ⅱ','미적분Ⅱ','확률과통계'],core:['화학Ⅱ','생명과학Ⅱ'],strategy:'의예과는 수능최저가 매우 높은 대학이 대부분입니다. 과학탐구 2과목 모두 높은 성적이 필요하며, 수학은 미적분/기하 선택이 유리합니다.',studyTips:['1학년: 과학 전 과목 기초 탄탄히, 수학 상위권 유지','2학년: 화학Ⅱ·생명과학Ⅱ 심화, 의학 관련 탐구활동','3학년: 수능 과탐 2과목 집중, 면접(MMI) 대비'],keywords:['의']},
+  {id:'dent',name:'치의예과',field:'의약',desc:'구강 및 치과 의학',rec:['화학Ⅱ','생명과학Ⅱ','물리학Ⅱ','미적분Ⅱ'],core:['화학Ⅱ','생명과학Ⅱ'],strategy:'치의예과도 수능최저가 높습니다. 면접 대비와 치의학 관련 탐구가 중요합니다.',studyTips:['과학탐구 2과목 1등급 목표','수학 미적분/기하 선택 권장','치의학 관련 독서 및 탐구보고서'],keywords:['치의']},
+  {id:'orient',name:'한의예과',field:'의약',desc:'한방 의학, 한방과학',rec:['생명과학Ⅱ','화학Ⅱ','미적분Ⅱ'],core:['생명과학Ⅱ'],strategy:'한의예과는 인문계열에서도 지원 가능한 대학이 있습니다. 한의학에 대한 깊은 관심이 필요합니다.',studyTips:['생명과학Ⅱ 필수, 화학Ⅱ 권장','한의학 관련 독서활동 (동의보감 등)','과학탐구와 인문학적 소양 모두 어필'],keywords:['한의']},
+  {id:'vet',name:'수의예과',field:'의약',desc:'동물 의학',rec:['생명과학Ⅱ','화학Ⅱ','미적분Ⅱ'],core:['생명과학Ⅱ'],strategy:'수의예과는 생명과학 심화가 핵심. 동물 관련 봉사나 탐구활동이 차별화 포인트.',studyTips:['생명과학Ⅱ + 화학Ⅱ 조합 권장','동물보호센터 봉사, 생태 관련 탐구','수학 미적분 선택 유리'],keywords:['수의']},
+  {id:'pharm',name:'약학과',field:'의약',desc:'약학, 제약, 임상약학',rec:['화학Ⅱ','생명과학Ⅱ','미적분Ⅱ','물리학Ⅱ'],core:['화학Ⅱ'],strategy:'약학과는 화학이 가장 중요. 수능최저도 높은 편이며, 화학 관련 심화탐구가 핵심 경쟁력.',studyTips:['화학Ⅱ 최우선, 생명과학Ⅱ 권장','신약 개발, 약물 작용 메커니즘 탐구','수학 미적분 선택, 과탐 2과목 상위권 유지'],keywords:['약']},
+  {id:'nurse',name:'간호학과',field:'의약',desc:'간호학, 보건간호',rec:['생명과학Ⅱ','화학Ⅱ','확률과통계'],core:['생명과학Ⅱ'],strategy:'간호학과는 서류 100% 대학이 많아 내신 관리가 매우 중요. 보건·의료 관련 봉사활동이 핵심.',studyTips:['내신 전 과목 관리가 최우선','생명과학Ⅱ로 전공 적합성 어필','보건의료 관련 봉사, 간호사 직업체험'],keywords:['간호']},
+  {id:'cs',name:'컴퓨터공학/SW',field:'공학',desc:'소프트웨어, 알고리즘',rec:['미적분Ⅱ','확률과통계','인공지능기초','정보과학','데이터과학'],core:['미적분Ⅱ','인공지능기초'],strategy:'컴퓨터공학은 수학 실력과 코딩 경험 모두 중요. 정보 교과를 적극 활용하고, 코딩 프로젝트를 학생부에 녹이세요.',studyTips:['수학 미적분Ⅱ + 확률과통계 필수','인공지능기초, 정보과학 반드시 선택','개인 코딩 프로젝트, 알고리즘 대회 참가'],keywords:['컴퓨터','소프트웨어','SW','IT','정보','인공지능','AI']},
+  {id:'ai',name:'인공지능학과',field:'공학',desc:'AI, 머신러닝, 딥러닝',rec:['미적분Ⅱ','확률과통계','인공지능기초','데이터과학','물리학Ⅱ'],core:['미적분Ⅱ','인공지능기초','확률과통계'],strategy:'AI학과는 수학(확률과통계, 미적분)이 핵심. 데이터 분석 프로젝트 경험이 차별화 포인트.',studyTips:['수학 최상위 유지','인공지능기초 선택 필수, Python 학습 병행','AI 윤리, 사회적 영향 탐구보고서'],keywords:['AI','인공지능','머신러닝']},
+  {id:'ee',name:'전자전기공학',field:'공학',desc:'반도체, 통신, 전력시스템',rec:['물리학Ⅱ','미적분Ⅱ','기하','역학과에너지'],core:['물리학Ⅱ','미적분Ⅱ'],strategy:'전자전기공학은 물리학과 수학이 기본. 반도체 특성화 전형도 주목하세요.',studyTips:['물리학Ⅱ + 미적분Ⅱ 필수 조합','전자회로, 아두이노 등 실험/프로젝트','반도체, 5G 통신 등 기술 동향 탐구'],keywords:['전자','전기','반도체']},
+  {id:'me',name:'기계공학',field:'공학',desc:'기계설계, 로봇, 자동차',rec:['물리학Ⅱ','미적분Ⅱ','기하','역학과에너지','로봇과공학세계'],core:['물리학Ⅱ','미적분Ⅱ'],strategy:'기계공학은 역학(물리) 기반. 로봇공학, 3D 모델링 등 실습 경험이 빛납니다.',studyTips:['물리학Ⅱ 반드시 선택, 역학과에너지 추가 권장','CAD/3D프린터, 로봇 제작 프로젝트','공학일반, 로봇과공학세계 선택 추천'],keywords:['기계','로봇','자동차']},
+  {id:'chem_eng',name:'화학공학/신소재',field:'공학',desc:'화공, 에너지, 소재',rec:['화학Ⅱ','물리학Ⅱ','미적분Ⅱ','화학반응의세계'],core:['화학Ⅱ','미적분Ⅱ'],strategy:'화학공학은 화학+수학+물리 모두 중요. 에너지, 배터리, 신소재 분야 탐구가 트렌드.',studyTips:['화학Ⅱ + 물리학Ⅱ 조합 권장','에너지(배터리, 수소), 신소재 탐구','화학 실험 보고서, 과학탐구 대회'],keywords:['화학공학','신소재','에너지','배터리']},
+  {id:'bio_eng',name:'생명공학/바이오',field:'공학',desc:'유전공학, 바이오테크',rec:['생명과학Ⅱ','화학Ⅱ','세포와물질대사','생물의유전'],core:['생명과학Ⅱ','화학Ⅱ'],strategy:'생명공학은 생명과학+화학 융합. 유전자 편집, 바이오의약품 등 첨단 분야 탐구 추천.',studyTips:['생명과학Ⅱ + 화학Ⅱ 필수','유전공학(CRISPR), 줄기세포 탐구','생물 관련 실험, 탐구보고서 작성'],keywords:['생명공학','바이오','유전']},
+  {id:'arch',name:'건축/토목/환경',field:'공학',desc:'건축설계, 도시계획',rec:['물리학Ⅱ','미적분Ⅱ','기하','미술창작'],core:['물리학Ⅱ','기하'],strategy:'건축학은 이과+예술 감각 모두 필요. 건축학(5년제)과 건축공학(4년제) 차이를 이해하세요.',studyTips:['기하 필수 (공간감각), 물리학Ⅱ 권장','건축 스케치, 모형 제작 포트폴리오','도시계획 관심 시 사회문화, 세계지리도 추천'],keywords:['건축','토목','환경','도시']},
+  {id:'math',name:'수학/통계학',field:'자연',desc:'순수수학, 응용수학, 통계',rec:['미적분Ⅱ','기하','확률과통계','수학과제탐구','실용통계'],core:['미적분Ⅱ','기하','확률과통계'],strategy:'수학과는 수학 내신 최상위가 기본. 수학과제탐구에서 깊이 있는 사고력을 보여주세요.',studyTips:['수학 전 과목 1등급 유지','수학과제탐구에서 창의적 주제 선정·발표','교양수학서 독서 활동'],keywords:['수학','통계']},
+  {id:'physics',name:'물리학',field:'자연',desc:'이론물리, 응용물리',rec:['물리학Ⅱ','미적분Ⅱ','기하','역학과에너지'],core:['물리학Ⅱ','미적분Ⅱ'],strategy:'물리학과는 수학+물리 모두 최상위. 실험 기반 탐구보고서가 핵심.',studyTips:['물리학Ⅱ + 미적분Ⅱ 필수','물리 실험 보고서, 과학 탐구대회','양자역학, 상대성이론 교양 독서'],keywords:['물리']},
+  {id:'chem',name:'화학',field:'자연',desc:'유기화학, 분석화학',rec:['화학Ⅱ','물리학Ⅱ','미적분Ⅱ','화학반응의세계','물질과에너지'],core:['화학Ⅱ'],strategy:'화학과는 화학Ⅱ 필수, 실험 보고서의 질이 중요합니다.',studyTips:['화학Ⅱ 필수, 화학반응의세계 추가 선택','화학 실험 설계·수행·보고서 경험','최신 화학 동향 (노벨화학상 등) 탐구'],keywords:['화학']},
+  {id:'bio',name:'생명과학',field:'자연',desc:'분자생물학, 생태학',rec:['생명과학Ⅱ','화학Ⅱ','세포와물질대사','생물의유전'],core:['생명과학Ⅱ'],strategy:'생명과학은 생물학적 호기심과 실험 역량이 핵심. 교내 생물 실험, 생태조사를 적극 활용.',studyTips:['생명과학Ⅱ 필수, 세포와물질대사 or 생물의유전 추가','생태조사, DNA 추출 실험 등 직접 수행','생명윤리에 대한 고민도 어필'],keywords:['생명과학','생물']},
+  {id:'biz',name:'경영학',field:'인문사회',desc:'경영전략, 마케팅',rec:['경제','확률과통계','사회문화','실용통계','데이터과학'],core:['경제','확률과통계'],strategy:'경영학은 "융합형 인재"를 원합니다. 경제 지식과 데이터 분석 능력이 트렌드.',studyTips:['경제 + 사회문화 선택 기본','확률과통계, 데이터과학으로 분석 역량 어필','창업 동아리, 경제 신문 스크랩, 모의투자'],keywords:['경영']},
+  {id:'econ',name:'경제학',field:'인문사회',desc:'미시경제, 거시경제, 금융',rec:['경제','미적분Ⅱ','확률과통계','실용통계'],core:['경제','미적분Ⅱ'],strategy:'경제학은 수학 실력이 매우 중요. 문과지만 미적분Ⅱ 선택이 큰 장점.',studyTips:['경제 필수, 미적분Ⅱ 강력 권장','경제 시사 이슈 탐구(환율, 금리, 물가)','데이터 기반 경제 분석 프로젝트'],keywords:['경제','금융']},
+  {id:'law',name:'법학',field:'인문사회',desc:'헌법, 민법, 형법',rec:['정치와법','윤리와사상','세계사','논리학'],core:['정치와법'],strategy:'법학은 논리적 사고력과 사회 이슈에 대한 깊은 이해가 필요. 모의재판, 법률 토론 활동이 효과적.',studyTips:['정치와법 필수, 윤리와사상 권장','모의재판, 법 관련 독서토론 동아리','헌법재판소 판례 분석, 사회 쟁점 에세이'],keywords:['법']},
+  {id:'polsci',name:'정치외교학',field:'인문사회',desc:'정치이론, 국제관계',rec:['정치와법','세계사','국제관계와국제기구','영어Ⅱ'],core:['정치와법','세계사'],strategy:'정치외교학은 국제 이슈에 폭넓은 시야가 필요. 영어 역량도 중요.',studyTips:['정치와법 + 세계사 + 국제관계와국제기구','UN 모의회의(MUN) 참가','영어 원서, 외교 관련 에세이'],keywords:['정치','외교','국제']},
+  {id:'psych',name:'심리학',field:'인문사회',desc:'임상심리, 상담심리',rec:['심리학','생명과학Ⅱ','확률과통계','사회문화'],core:['심리학'],strategy:'심리학은 인문+과학 융합 학문. 통계(실험 설계)와 생명과학(뇌과학) 소양이 점점 중요.',studyTips:['심리학 선택 필수, 확률과통계 권장','심리학 독서와 실험 설계 경험','또래상담, 심리 관련 탐구보고서'],keywords:['심리']},
+  {id:'edu',name:'교육학/사범/교대',field:'교육',desc:'초등교육, 교과교육',rec:['교육학','심리학','윤리와사상','논리학'],core:['교육학'],strategy:'사범대와 교대는 면접 비중이 높습니다. 교직 적성과 인성을 보여주는 활동이 핵심. 교대는 수능최저가 있는 곳이 많습니다.',studyTips:['전 과목 내신 균형 있게 관리','교육봉사, 멘토링, 학습도우미 활동','면접 대비: 교육 이슈, 교사상에 대한 깊은 고민'],keywords:['교육','사범','교대','교직']},
+  {id:'lang',name:'언어/문학/어문',field:'인문사회',desc:'국문학, 영문학, 외국어',rec:['영어Ⅱ','영어독해와작문','영미문학읽기','일본어','중국어'],core:['영어Ⅱ'],strategy:'어문계열은 해당 언어에 대한 깊은 관심과 문학적 소양이 필요.',studyTips:['해당 언어 과목 최상위 유지','원서 독서, 번역, 에세이 대회 참가','해당 문화권에 대한 깊은 이해'],keywords:['영어','국어','문학','외국어','언어']},
+  {id:'media',name:'미디어/언론',field:'인문사회',desc:'저널리즘, 콘텐츠',rec:['사회문화','영어Ⅱ','사회문제탐구','심리학','데이터과학'],core:['사회문화'],strategy:'미디어학과는 콘텐츠 제작 경험과 사회 이슈 분석력이 중요.',studyTips:['교내 신문반, 방송반, 영상 제작','사회 이슈 분석, 미디어 리터러시','데이터과학으로 디지털 미디어 역량 강화'],keywords:['미디어','언론','광고','방송']},
+  {id:'design',name:'디자인/미술',field:'예체능',desc:'시각/산업디자인',rec:['미술창작','소프트웨어와생활','인공지능기초'],core:['미술창작'],strategy:'디자인학과는 포트폴리오가 핵심. 학종에서는 디자인적 사고와 창의성이 중요.',studyTips:['미술창작 선택, 포트폴리오 꾸준히 준비','UX/UI에 관심 있으면 소프트웨어 과목도','디자인 공모전, 교내 포스터 제작'],keywords:['디자인','미술']},
+  {id:'sport',name:'체육/스포츠',field:'예체능',desc:'체육교육, 스포츠과학',rec:['체육과진로탐구','스포츠생활','생명과학Ⅱ'],core:['체육과진로탐구'],strategy:'체육학과는 실기와 학업 모두 중요. 스포츠과학은 생명과학 기반도 필요.',studyTips:['체육 과목 선택 + 운동 경력 관리','스포츠과학 관심 시 생명과학Ⅱ 선택','체육 대회, 스포츠 봉사활동'],keywords:['체육','스포츠']},
+  // === 의약·보건 세부 ===
+  {id:'pt',name:'물리치료학과',field:'의약',desc:'재활치료, 운동치료, 근골격계 치료',rec:['생명과학Ⅱ','화학Ⅱ','체육과진로탐구'],core:['생명과학Ⅱ'],strategy:'물리치료학과는 해부학·생리학 기반이므로 생명과학이 핵심. 운동역학 관심도 도움됩니다.',studyTips:['생명과학Ⅱ 필수, 화학Ⅱ 권장','재활의학, 운동치료 관련 봉사·탐구','체육+과학 융합형 활동이 차별화 포인트'],keywords:['물리치료','재활']},
+  {id:'ot',name:'작업치료학과',field:'의약',desc:'일상생활 재활, 인지재활',rec:['생명과학Ⅱ','심리학','화학Ⅱ'],core:['생명과학Ⅱ'],strategy:'작업치료는 생명과학+심리학 융합. 장애인 봉사 경험이 학생부에서 강점이 됩니다.',studyTips:['생명과학Ⅱ 필수, 심리학 권장','장애인복지관 봉사, 재활 관련 탐구','인지과학 관련 독서 활동'],keywords:['작업치료']},
+  {id:'dental_hyg',name:'치위생학과',field:'의약',desc:'구강건강관리, 치과위생사',rec:['생명과학Ⅱ','화학Ⅱ'],core:['생명과학Ⅱ'],strategy:'치위생학과는 내신 관리가 중요하며, 보건의료 분야 봉사활동이 도움됩니다.',studyTips:['생명과학Ⅱ 선택 권장','구강보건 관련 탐구보고서','보건의료 봉사활동 경험'],keywords:['치위생','구강']},
+  {id:'radiology',name:'방사선학과',field:'의약',desc:'의료영상, 방사선치료, 핵의학',rec:['물리학Ⅱ','생명과학Ⅱ','화학Ⅱ'],core:['물리학Ⅱ'],strategy:'방사선학과는 물리학이 핵심. CT, MRI 등 의료영상 원리를 이해하려면 물리 기초가 필수.',studyTips:['물리학Ⅱ 필수, 생명과학Ⅱ 권장','의료영상기술, 방사선 안전 탐구','병원 방사선과 직업체험 활동'],keywords:['방사선','영상의학']},
+  {id:'clinical_lab',name:'임상병리학과',field:'의약',desc:'임상검사, 진단검사의학',rec:['생명과학Ⅱ','화학Ⅱ','세포와물질대사'],core:['생명과학Ⅱ','화학Ⅱ'],strategy:'임상병리학과는 생명과학+화학 모두 중요. 실험 역량이 핵심 경쟁력.',studyTips:['생명과학Ⅱ + 화학Ⅱ 조합 필수','혈액검사, PCR 등 진단기술 탐구','생물·화학 실험 보고서 작성 경험'],keywords:['임상병리','진단검사']},
+  {id:'pub_health',name:'보건학/보건행정',field:'의약',desc:'공중보건, 보건정책, 역학',rec:['생명과학Ⅱ','사회문화','확률과통계'],core:['생명과학Ⅱ'],strategy:'보건학은 과학+사회과학 융합. 통계 역량과 보건정책 관심이 중요.',studyTips:['생명과학Ⅱ + 사회문화 조합','감염병, 보건정책 관련 시사 탐구','확률과통계로 역학 데이터 분석 역량 키우기'],keywords:['보건','공중보건','보건행정','역학']},
+  {id:'food_nutrition',name:'식품영양학과',field:'자연',desc:'영양학, 식품과학, 급식경영',rec:['화학Ⅱ','생명과학Ⅱ','세포와물질대사'],core:['화학Ⅱ','생명과학Ⅱ'],strategy:'식품영양학은 화학+생명과학 기반. 식품 안전, 영양 관련 탐구가 중요.',studyTips:['화학Ⅱ + 생명과학Ⅱ 조합 필수','식품성분 분석, 영양소 대사 관련 탐구','식생활 개선 프로젝트, 급식 관련 활동'],keywords:['식품','영양','급식','푸드']},
+  // === 인문·사회 세부 ===
+  {id:'creative_writing',name:'문예창작학과',field:'인문사회',desc:'소설, 시, 극작, 창작문학',rec:['영어Ⅱ','영미문학읽기','철학','윤리와사상'],core:['영어Ⅱ'],strategy:'문예창작학과는 꾸준한 글쓰기 습관과 문학적 감수성이 핵심. 교내외 문학상 수상 경력이 강점.',studyTips:['국어·문학 최상위 유지, 다양한 장르 독서','교내 문학 동아리, 백일장/문학상 참가','창작 포트폴리오(시, 소설, 에세이) 꾸준히 축적'],keywords:['문예창작','창작','소설','시','극작','문학','작가']},
+  {id:'history',name:'사학과/역사학',field:'인문사회',desc:'한국사, 동양사, 서양사, 고고학',rec:['세계사','동아시아사','한국지리','윤리와사상'],core:['세계사'],strategy:'사학과는 역사적 사고력과 사료 분석 능력이 핵심. 역사 관련 독서량이 중요.',studyTips:['세계사 + 동아시아사 조합 추천','역사 관련 독서토론 동아리, 답사 활동','역사 에세이 작성, 사료 분석 보고서'],keywords:['사학','역사','고고학','한국사','동양사','서양사']},
+  {id:'philosophy_dept',name:'철학과',field:'인문사회',desc:'동양철학, 서양철학, 논리학',rec:['철학','윤리와사상','논리학'],core:['철학','윤리와사상'],strategy:'철학과는 깊은 사유와 논증 능력이 핵심. 윤리와사상 선택이 강력 권장됩니다.',studyTips:['윤리와사상 + 철학 선택','철학 고전 독서(플라톤, 노자, 칸트 등)','논증적 글쓰기, 철학 에세이 대회'],keywords:['철학','윤리']},
+  {id:'sociology',name:'사회학과',field:'인문사회',desc:'사회구조, 불평등, 문화연구',rec:['사회문화','사회문제탐구','정치와법','확률과통계'],core:['사회문화'],strategy:'사회학은 사회 현상에 대한 분석적 시각이 필요. 통계 분석 역량도 점점 중요해지고 있습니다.',studyTips:['사회문화 필수, 사회문제탐구 권장','사회 이슈 분석 보고서, 설문조사 프로젝트','확률과통계로 사회 데이터 분석 역량 강화'],keywords:['사회학','사회복지','복지']},
+  {id:'public_admin',name:'행정학과',field:'인문사회',desc:'공공행정, 정책학, 지방행정',rec:['정치와법','경제','사회문화','윤리와사상'],core:['정치와법','경제'],strategy:'행정학은 공공정책과 법에 대한 이해가 기본. 공무원/공공기관 관심자에게 적합.',studyTips:['정치와법 + 경제 조합 추천','지방자치, 공공정책 관련 탐구 활동','모의국회, 정책 제안 프로젝트'],keywords:['행정','공공','정책','공무원']},
+  {id:'social_welfare',name:'사회복지학과',field:'인문사회',desc:'복지정책, 상담, 지역사회복지',rec:['사회문화','심리학','윤리와사상','사회문제탐구'],core:['사회문화','심리학'],strategy:'사회복지학은 따뜻한 마음과 체계적 분석 능력 모두 필요. 봉사 경험이 핵심.',studyTips:['사회문화 + 심리학 조합','복지관/요양원 등 지속적 봉사활동','사회문제 분석 보고서, 복지정책 탐구'],keywords:['사회복지','복지','상담','봉사']},
+  {id:'child_edu',name:'아동학/유아교육',field:'교육',desc:'아동발달, 유아교육, 보육',rec:['교육학','심리학','생명과학Ⅱ'],core:['교육학','심리학'],strategy:'유아교육은 아동 발달 이해와 교육적 역량이 핵심. 아동 대상 봉사 경험 필수.',studyTips:['교육학 + 심리학 선택 권장','지역아동센터/어린이집 봉사','아동 발달, 놀이 교육 관련 독서·탐구'],keywords:['아동','유아교육','보육','어린이']},
+  {id:'special_edu',name:'특수교육학과',field:'교육',desc:'장애학생 교육, 통합교육',rec:['교육학','심리학','윤리와사상'],core:['교육학'],strategy:'특수교육은 교직 적성과 인성이 특히 중요. 장애인 대상 봉사가 필수적.',studyTips:['교육학 선택, 심리학 권장','장애인복지관, 특수학교 봉사활동','통합교육, 장애이해 관련 탐구보고서'],keywords:['특수교육','장애','통합교육']},
+  {id:'tourism',name:'관광학과/호텔경영',field:'인문사회',desc:'관광경영, 호텔관리, 항공서비스',rec:['경제','사회문화','영어Ⅱ','세계지리'],core:['경제','영어Ⅱ'],strategy:'관광학과는 글로벌 역량과 서비스 마인드가 중요. 외국어 능력이 큰 강점.',studyTips:['경제 + 영어Ⅱ 조합, 세계지리 추가 추천','관광 관련 외국어 학습, 문화 탐구','여행 기획, 관광지 분석 프로젝트'],keywords:['관광','호텔','항공','여행','서비스','관광경영']},
+  {id:'intl_studies',name:'국제학/글로벌학부',field:'인문사회',desc:'국제통상, 글로벌비즈니스',rec:['경제','영어Ⅱ','세계사','국제관계와국제기구'],core:['경제','영어Ⅱ'],strategy:'국제학은 영어 역량이 필수. 국제 이슈에 대한 폭넓은 관심과 분석력이 필요.',studyTips:['영어Ⅱ + 경제 + 국제관계와국제기구','영어 토론, 모의 UN, 국제교류 활동','국제통상, 무역 관련 시사 탐구'],keywords:['국제','글로벌','통상','무역']},
+  // === 공학 세부 ===
+  {id:'food_eng',name:'식품공학과',field:'공학',desc:'식품가공, 발효공학, 식품안전',rec:['화학Ⅱ','생명과학Ⅱ','화학반응의세계'],core:['화학Ⅱ','생명과학Ⅱ'],strategy:'식품공학은 화학+생명과학 융합. 발효식품, 식품 안전 관련 탐구가 차별화 포인트.',studyTips:['화학Ⅱ + 생명과학Ⅱ 필수','식품 발효, 가공 실험 프로젝트','식품안전, 기능성식품 관련 탐구'],keywords:['식품공학','발효','식품가공']},
+  {id:'env_eng',name:'환경공학과',field:'공학',desc:'대기, 수질, 폐기물 처리, 기후변화',rec:['화학Ⅱ','생명과학Ⅱ','미적분Ⅱ','지구시스템과학'],core:['화학Ⅱ'],strategy:'환경공학은 화학이 기본이며, 기후변화·탄소중립 등 시사 이슈와 연결됩니다.',studyTips:['화학Ⅱ 필수, 지구시스템과학 추가 권장','기후변화, 탄소중립 관련 탐구보고서','환경 관련 동아리, 수질/대기 측정 프로젝트'],keywords:['환경공학','환경','기후','탄소','대기','수질']},
+  {id:'urban_plan',name:'도시계획/부동산',field:'공학',desc:'도시설계, 교통계획, 부동산학',rec:['세계지리','한국지리','경제','사회문화'],core:['세계지리','경제'],strategy:'도시계획은 공학+사회과학 융합. 지리적 사고력과 데이터 분석이 중요.',studyTips:['세계지리/한국지리 + 경제 조합','도시 문제(교통, 주거) 탐구 프로젝트','GIS, 지도 데이터 활용 경험'],keywords:['도시','도시계획','부동산','교통','지역']},
+  {id:'industrial_eng',name:'산업공학과',field:'공학',desc:'생산관리, 품질경영, 데이터분석',rec:['미적분Ⅱ','확률과통계','데이터과학','인공지능기초'],core:['미적분Ⅱ','확률과통계'],strategy:'산업공학은 수학+데이터 분석이 핵심. 공학과 경영의 융합 학문.',studyTips:['미적분Ⅱ + 확률과통계 필수','데이터 분석 프로젝트, 효율화 탐구','경영과 공학 양쪽 관심 보여주기'],keywords:['산업공학','산업','품질','생산','경영공학']},
+  {id:'material_eng',name:'재료공학/금속공학',field:'공학',desc:'금속, 세라믹, 고분자, 복합재료',rec:['화학Ⅱ','물리학Ⅱ','미적분Ⅱ','물질과에너지'],core:['화학Ⅱ','물리학Ⅱ'],strategy:'재료공학은 화학+물리 기반. 배터리 소재, 반도체 재료 등 첨단 분야가 유망.',studyTips:['화학Ⅱ + 물리학Ⅱ 조합 권장','배터리/반도체 소재 관련 탐구','재료 실험(금속, 고분자 등) 보고서'],keywords:['재료','금속','세라믹','고분자','소재']},
+  {id:'energy_eng',name:'에너지공학/원자력',field:'공학',desc:'신재생에너지, 원자력, 에너지시스템',rec:['물리학Ⅱ','화학Ⅱ','미적분Ⅱ','역학과에너지'],core:['물리학Ⅱ'],strategy:'에너지공학은 물리학이 핵심. 탄소중립, 수소에너지 등 미래 에너지 분야가 주목받고 있습니다.',studyTips:['물리학Ⅱ 필수, 화학Ⅱ 권장','신재생에너지(태양광/풍력/수소) 탐구','에너지 전환, 탄소중립 관련 보고서'],keywords:['에너지','원자력','신재생','태양광','수소']},
+  // === 예술·디자인 세부 ===
+  {id:'fashion',name:'의상디자인/패션',field:'예체능',desc:'패션디자인, 의류학, 텍스타일',rec:['미술창작','화학Ⅱ','소프트웨어와생활'],core:['미술창작'],strategy:'의상디자인은 예술적 감각과 소재(화학) 이해가 모두 필요. 포트폴리오가 핵심.',studyTips:['미술창작 선택, 패션 포트폴리오 꾸준히 준비','의류 소재에 관심 있으면 화학Ⅱ도 도움','패션 공모전 참가, 의상 제작 경험'],keywords:['의상','패션','의류','텍스타일','섬유','옷','복식']},
+  {id:'film',name:'영화/영상학과',field:'예체능',desc:'영화제작, 영상콘텐츠, 애니메이션',rec:['미술창작','사회문화','영어Ⅱ'],core:['미술창작'],strategy:'영화학과는 창작 경험과 스토리텔링 능력이 핵심. 단편영화 제작 경험이 강점.',studyTips:['교내 영상/방송 동아리 적극 참여','단편영화, 다큐멘터리 제작 경험','영화 감상 비평문, 시나리오 작성'],keywords:['영화','영상','애니메이션','콘텐츠','시나리오','촬영']},
+  {id:'theater',name:'연극/뮤지컬',field:'예체능',desc:'연기, 뮤지컬, 연출, 무대디자인',rec:['음악이론','미술창작','심리학'],core:['음악이론'],strategy:'연극학과는 실기(연기/가창)와 인문학적 소양 모두 중요. 공연 경험을 쌓으세요.',studyTips:['교내 연극/뮤지컬 동아리 참여','공연 참가 경험(연기, 연출, 스태프)','희곡/극작 관련 독서, 공연 비평'],keywords:['연극','뮤지컬','연기','무대','공연','극작']},
+  {id:'dance',name:'무용학과',field:'예체능',desc:'한국무용, 현대무용, 발레',rec:['체육과진로탐구','음악이론','미술창작'],core:['체육과진로탐구'],strategy:'무용학과는 실기 역량이 최우선. 꾸준한 무용 훈련과 공연 경험이 필수.',studyTips:['무용 전공 실기 꾸준히 준비','공연/대회 참가 경력 관리','무용 관련 이론 독서(무용학 입문 등)'],keywords:['무용','댄스','발레','한국무용','현대무용']},
+  {id:'craft',name:'공예/도자/섬유',field:'예체능',desc:'도자공예, 금속공예, 섬유미술',rec:['미술창작','화학Ⅱ'],core:['미술창작'],strategy:'공예학과는 손작업 기술과 예술적 감각이 핵심. 작품 포트폴리오가 필수.',studyTips:['미술창작 선택, 공예 작품 포트폴리오','도자기/금속/섬유 등 다양한 매체 경험','공예 전시, 공모전 참가'],keywords:['공예','도자','섬유미술','금속공예','도예']},
+  {id:'visual_design',name:'시각디자인/커뮤니케이션',field:'예체능',desc:'그래픽디자인, 브랜딩, 타이포그래피',rec:['미술창작','소프트웨어와생활','인공지능기초'],core:['미술창작'],strategy:'시각디자인은 디지털 도구 활용 능력이 필수. 포스터, 로고 등 실습 경험이 중요.',studyTips:['미술창작 선택, 디지털 디자인 도구 학습','포스터, 로고, 인포그래픽 제작 경험','디자인 공모전, 교내 홍보물 제작'],keywords:['시각디자인','그래픽','브랜딩','편집디자인','커뮤니케이션디자인']},
+  {id:'interior',name:'실내디자인/공간디자인',field:'예체능',desc:'인테리어, 공간 연출, 전시디자인',rec:['미술창작','물리학Ⅱ','기하'],core:['미술창작'],strategy:'실내디자인은 공간 감각과 미적 감수성이 핵심. 건축과 미술의 융합 분야.',studyTips:['미술창작 + 기하(공간감각) 선택','인테리어 포트폴리오, 공간 스케치','건축/인테리어 관련 답사, 전시 방문'],keywords:['실내디자인','인테리어','공간','전시디자인']},
+  // === 자연과학 세부 ===
+  {id:'marine',name:'해양학/수산학',field:'자연',desc:'해양과학, 수산자원, 해양환경',rec:['생명과학Ⅱ','지구과학Ⅱ','화학Ⅱ','지구시스템과학'],core:['생명과학Ⅱ','지구과학Ⅱ'],strategy:'해양학은 생명과학+지구과학 융합. 바다 관련 현장 경험이 차별화 포인트.',studyTips:['생명과학Ⅱ + 지구과학Ⅱ 조합','해양생태, 해양오염 관련 탐구','바다 답사, 갯벌 생태조사 경험'],keywords:['해양','수산','바다','해양과학','해양생물']},
+  {id:'agriculture',name:'농업/원예/산림',field:'자연',desc:'작물학, 원예학, 산림자원학',rec:['생명과학Ⅱ','화학Ⅱ','생물의유전'],core:['생명과학Ⅱ'],strategy:'농업 분야는 생명과학이 기본. 스마트팜, 식물공장 등 첨단 농업 분야도 주목.',studyTips:['생명과학Ⅱ 필수, 화학Ⅱ 권장','학교 텃밭, 식물 재배 프로젝트','스마트팜, 유전육종 관련 탐구'],keywords:['농업','원예','산림','농학','작물','식물','조경','원예학']},
+  // === 기타 인기학과 ===
+  {id:'lib_info',name:'문헌정보학과',field:'인문사회',desc:'도서관학, 정보관리, 기록관리',rec:['정보과학','데이터과학','사회문화'],core:['정보과학'],strategy:'문헌정보학은 정보 분류·관리 능력이 핵심. 디지털 아카이빙, 데이터 관리 분야로 확장 중.',studyTips:['정보과학/데이터과학 선택 추천','도서관 봉사, 독서 기록 프로젝트','정보 분류·검색 관련 탐구'],keywords:['문헌정보','도서관','기록','사서','아카이브']},
+  {id:'geography',name:'지리학과',field:'인문사회',desc:'인문지리, 자연지리, GIS',rec:['세계지리','한국지리','지구과학Ⅱ','데이터과학'],core:['세계지리','한국지리'],strategy:'지리학은 공간적 사고와 데이터 분석이 핵심. GIS(지리정보시스템) 역량이 차별화.',studyTips:['세계지리 + 한국지리 조합 필수','GIS, 지도 관련 프로젝트 경험','지역 답사, 도시/환경 이슈 탐구'],keywords:['지리','GIS','지리정보','인문지리','자연지리','지도']},
+  {id:'anthropology',name:'인류학/고고학',field:'인문사회',desc:'문화인류학, 고고학, 민속학',rec:['세계사','사회문화','윤리와사상','세계지리'],core:['세계사','사회문화'],strategy:'인류학은 다양한 문화에 대한 호기심과 현장 조사 경험이 중요.',studyTips:['세계사 + 사회문화 조합','문화 다양성, 소수민족 관련 탐구','박물관 답사, 민속 조사 활동'],keywords:['인류학','고고학','민속','문화인류학']},
+  {id:'theology',name:'신학/종교학',field:'인문사회',desc:'기독교신학, 종교학, 선교학',rec:['윤리와사상','철학','세계사'],core:['윤리와사상'],strategy:'신학/종교학은 종교적 소명과 인문학적 소양이 기반. 대학별로 종교 관련 추천서 필요할 수 있음.',studyTips:['윤리와사상 + 철학 선택','종교 관련 독서, 봉사활동','신앙 성찰, 종교간 대화 탐구'],keywords:['신학','종교','목회','선교','기독교','불교']},
+  {id:'military',name:'군사학과/국방',field:'인문사회',desc:'군사전략, 안보학, 부사관/장교',rec:['정치와법','세계사','체육과진로탐구','물리학Ⅱ'],core:['정치와법'],strategy:'군사학과는 체력+학업+리더십 모두 평가. 군 관련 특별전형이 별도로 있는 대학이 많음.',studyTips:['정치와법 + 체육과진로탐구 조합','리더십 활동, 체력 관리','안보, 국방 이슈 관련 탐구'],keywords:['군사','국방','부사관','장교','안보','사관']},
+  {id:'comm',name:'커뮤니케이션/홍보',field:'인문사회',desc:'PR, 광고홍보, 스피치',rec:['사회문화','심리학','영어Ⅱ','사회문제탐구'],core:['사회문화','심리학'],strategy:'커뮤니케이션학은 설득과 소통 능력이 핵심. 실제 홍보/광고 기획 경험이 차별화.',studyTips:['사회문화 + 심리학 조합','교내 홍보대사, SNS 콘텐츠 기획','광고 공모전, PR 기획서 작성'],keywords:['커뮤니케이션','홍보','PR','광고','스피치']},
+];
+
+const FC={'의약':{bg:'rgba(248,113,113,.1)',c:'#f87171'},'공학':{bg:'rgba(56,189,248,.1)',c:'#38bdf8'},'자연':{bg:'rgba(52,211,153,.1)',c:'#34d399'},'인문사회':{bg:'rgba(251,191,36,.1)',c:'#fbbf24'},'교육':{bg:'rgba(244,114,182,.1)',c:'#f472b6'},'예체능':{bg:'rgba(167,139,250,.1)',c:'#a78bfa'}};
+const SKIP=['기회균형','농어촌','특수교육','재직자','특성화고','저소득','사회통합','사회배려','기초생활','장애인','서해5도','만학도','대안학교','목회자','교육기회','사회기여','기회균등','고른기회','국가보훈','평생학습','성인학습','사회공헌'];
+
+let mode='A',selSub=new Set(),selMaj=null,regF='전체',openP=new Set(),sTxt='',dbLog=[],myGrade=0;
+
+// D: 내신 로드맵
+const SEMESTERS=['1-1','1-2','2-1','2-2','3-1'];
+const COMMON_SUBJ_1={
+  '1-1':['공통국어1','공통수학1','공통영어1','한국사1','통합사회1','통합과학1','과학탐구실험1','체육','음악','정보','한문'],
+  '1-2':['공통국어2','공통수학2','공통영어2','한국사2','통합사회2','통합과학2','과학탐구실험2','체육','음악','정보','한문']
+};
+let roadmapData=JSON.parse(localStorage.getItem('roadmap')||'{}');
+// 2~3학년 사용자 추가 과목
+let userSubjects=JSON.parse(localStorage.getItem('userSubjects')||'{"2-1":[],"2-2":[],"3-1":[]}');
+function saveUserSubjects(){localStorage.setItem('userSubjects',JSON.stringify(userSubjects))}
+// E: 과목 시뮬레이터
+let simSub=new Set();
+// F: 학생 프로필 (학번+비번 로그인)
+let profileUser=null; // 로그인된 학번
+let profileData=null; // 로그인된 학생의 데이터
+let profileMode='login'; // 'login','register','view','edit','grades','journal'
+function simpleHash(str){let h=0;for(let i=0;i<str.length;i++){h=((h<<5)-h)+str.charCodeAt(i);h|=0}return 'h'+Math.abs(h).toString(36)}
+function loadProfile(id){try{return JSON.parse(localStorage.getItem('profile_'+id))||null}catch(e){return null}}
+function saveProfile(id,data){localStorage.setItem('profile_'+id,JSON.stringify(data))}
+function profileLogout(){profileUser=null;profileData=null;profileMode='login';render()}
+
+
+function getMatched(){if(!selSub.size)return[];return MAJORS.map(m=>{const mc=m.rec.filter(s=>selSub.has(s)).length;return{...m,mc,mr:mc/m.rec.length}}).filter(m=>m.mc>0).sort((a,b)=>b.mr-a.mr||b.mc-a.mc)}
+function getUnivs(){
+  const mj=selMaj?MAJORS.find(x=>x.id===selMaj):null;
+  const mjKw=mj?mj.keywords:[];
+  return UNIV_DB.filter(u=>regF==='전체'||u.rg===regF).map(u=>{
+    let mp=u.pg.filter(p=>!SKIP.some(k=>p.n.includes(k)));
+    if(!mp.length) return null;
+    // 모드B에서 학과 선택 시: 해당 학과 키워드로 관련 전형만 필터링
+    if(mode==='B'&&mj){
+      // dept 데이터에 해당 학과가 있는 전형 우선
+      const hasDept=mp.filter(p=>p.dept&&p.dept.some(d=>mjKw.some(k=>d.d.toLowerCase().includes(k.toLowerCase()))));
+      // 수능최저/전형명에 키워드가 있는 전형
+      const hasKw=mp.filter(p=>{
+        const txt=(p.n+' '+(p.mn||'')).toLowerCase();
+        return mjKw.some(k=>txt.includes(k));
+      });
+      // dept 매칭이 있으면 그 전형 + 키워드 매칭 전형 합침
+      const related=[...new Set([...hasDept,...hasKw])];
+      if(related.length>0){
+        mp=related;
+      }
+    }
+    return {...u,mp,tq:mp.reduce((s,p)=>s+p.q,0)};
+  }).filter(Boolean).sort((a,b)=>{
+    if(myGrade>0){
+      // 합격 가능성 점수 계산: 내 등급과 합격자 평균등급 차이
+      const scoreA=a.mp.reduce((best,p)=>{
+        if(!p.grades) return best;
+        const g=p.grades['인문']||p.grades['자연'];
+        if(!g) return best;
+        const diff=g.avg-myGrade; // 양수면 합격 가능성 높음
+        return Math.max(best,diff);
+      },-999);
+      const scoreB=b.mp.reduce((best,p)=>{
+        if(!p.grades) return best;
+        const g=p.grades['인문']||p.grades['자연'];
+        if(!g) return best;
+        const diff=g.avg-myGrade;
+        return Math.max(best,diff);
+      },-999);
+      // 내 등급보다 합격자 평균이 높은(=쉬운) 대학 먼저
+      if(scoreA!==scoreB) return scoreB-scoreA;
+    }
+    return b.tq-a.tq;
+  });
+}
+function filterMaj(){if(!sTxt)return MAJORS;const q=sTxt.toLowerCase();return MAJORS.filter(m=>m.name.toLowerCase().includes(q)||m.desc.includes(q)||m.field.includes(q)||m.keywords.some(k=>k.includes(q)))}
+
+function render(){
+  // 로그인 상태면 프로필 등급 자동 반영
+  if(profileUser&&profileData&&profileData.grade){myGrade=parseFloat(profileData.grade)||0}
+  document.getElementById('app').innerHTML=`
+    <div class="header"><h1>🧭 입시 나침반</h1><p>선택과목과 학과/대학을 양방향으로 탐색하세요 · 집단지성 DB</p><span class="badge">2022 개정 교육과정 · 학종 DB ${UNIV_DB.length}개 대학</span></div>
+    <div class="tabs">
+      <button class="tab ${mode==='F'?'active':''}" onclick="SM('F')">🔐 내 프로필</button>
+      <button class="tab ${mode==='D'?'active':''}" onclick="SM('D')">📈 내신 로드맵</button>
+      <button class="tab ${mode==='A'?'active':''}" onclick="SM('A')">📚 과목 → 학과</button>
+      <button class="tab ${mode==='B'?'active':''}" onclick="SM('B')">🎯 학과 → 과목·전략</button>
+      <button class="tab ${mode==='E'?'active':''}" onclick="SM('E')">🔬 과목 시뮬레이터</button>
+      <button class="tab ${mode==='C'?'active':''}" onclick="SM('C')">⚙️ DB 관리</button>
+      <button class="tab ${mode==='G'?'active':''}" onclick="SM('G')">❓ 도움말</button>
+    </div>
+    ${mode==='A'?renderA():mode==='B'?renderB():mode==='C'?renderC():mode==='D'?renderD():mode==='E'?renderE():mode==='F'?renderF():renderG()}
+    <div class="footer">입시 나침반 v6.2 (웹 서비스) — 2027학년도 학종 가이드북 기반 · 제주여고 정보교과<br>※ 실제 지원 시 반드시 해당 대학 모집요강을 직접 확인하세요</div>`;
+}
+
+function renderA(){
+  const m=getMatched(),u=getUnivs();
+  return `<div class="step"><div class="step-title"><div class="step-num">1</div><div class="step-label">관심 선택과목을 골라보세요</div></div>
+    ${SUBJECT_GROUPS.map(g=>`<span class="group-label">${g.label}</span><div class="chip-grid">${g.subjects.map(s=>`<div class="chip ${selSub.has(s)?'selected':''}" onclick="TS('${s}')">${s}</div>`).join('')}</div>`).join('')}</div>
+    ${!selSub.size?'<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">선택과목을 클릭하면 관련 학과와 대학이 나타납니다</div></div>':`
+    <div class="no-print print-options"><button class="print-btn" onclick="window.print()">🖨️ 현재 결과 인쇄</button><button class="print-btn pdf" onclick="exportPDF()">📄 PDF 저장</button></div>
+    <div class="stats"><div class="stat"><div class="stat-num">${selSub.size}</div><div class="stat-label">선택 과목</div></div><div class="stat"><div class="stat-num">${m.length}</div><div class="stat-label">관련 학과</div></div><div class="stat"><div class="stat-num">${m.filter(x=>x.mr>=.5).length}</div><div class="stat-label">강력 매칭</div></div><div class="stat"><div class="stat-num">${u.length}</div><div class="stat-label">지원가능 대학</div></div></div>
+    <div class="step" style="margin-bottom:16px"><div class="step-title" style="margin-bottom:8px"><span style="font-size:.85rem;font-weight:600;color:var(--accent2)">📊 내 평균등급으로 필터링 (선택)</span></div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <input type="range" min="10" max="65" step="1" value="${myGrade*10||30}" oninput="setMyGrade(this.value/10)" style="flex:1;min-width:150px;accent-color:var(--accent)">
+      <span style="font-size:.9rem;font-weight:700;color:var(--accent);min-width:60px">${myGrade?myGrade.toFixed(1)+'등급':'미설정'}</span>
+      <button class="fbtn ${myGrade?'':'active'}" onclick="setMyGrade(0)" style="font-size:.7rem">초기화</button>
+    </div>
+    <div style="font-size:.68rem;color:var(--text3);margin-top:4px">등급을 설정하면 합격 가능성이 높은 대학이 상단에 표시됩니다 (2025학년도 합격자 평균 기준)</div>
+    </div>
+    <div class="step"><div class="step-title"><div class="step-num">2</div><div class="step-label">매칭된 학과 (${m.length}개)</div></div>
+    ${m.map(x=>{const fc=FC[x.field]||{bg:'rgba(148,163,184,.1)',c:'#94a3b8'},pct=Math.round(x.mr*100),bc=pct>=70?'var(--green)':pct>=40?'var(--amber)':'var(--text3)';
+      return`<div class="card" onclick="GoB('${x.id}')"><div style="display:flex;justify-content:space-between"><div class="card-title">${x.name}</div><span style="font-size:.73rem;font-weight:700;color:${bc}">${pct}%</span></div><div class="match-bar"><div class="match-fill" style="width:${pct}%;background:${bc}"></div></div><div class="card-desc">${x.desc}</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px">${x.rec.map(s=>`<span style="font-size:.65rem;padding:2px 5px;border-radius:5px;${selSub.has(s)?'background:rgba(56,189,248,.2);color:var(--accent);font-weight:600':'background:rgba(100,116,139,.08);color:var(--text3)'}">${s}</span>`).join('')}</div><span class="card-field" style="background:${fc.bg};color:${fc.c}">${x.field}</span></div>`}).join('')}</div>
+    <div class="step"><div class="step-title"><div class="step-num">3</div><div class="step-label">지원 가능 대학 (${u.length}개교)</div></div>
+    <div class="filters no-print">${['전체','서울','경인','강원','충청','호남','대경','동남','제주'].map(r=>`<div class="fbtn ${regF===r?'active':''}" onclick="SR('${r}')">${r}</div>`).join('')}</div>
+    ${rUP(u,m)}</div>`}`;
+}
+
+function renderB(){
+  const fl=filterMaj(),mj=selMaj?MAJORS.find(x=>x.id===selMaj):null,u=mj?getUnivs():[];
+  return `<div class="step"><div class="step-title"><div class="step-num">1</div><div class="step-label">학과를 선택하세요</div></div>
+    <div class="search-box no-print"><span class="search-icon">🔍</span><input id="mjSearch" placeholder="학과명, 계열, 키워드 검색..." value="${sTxt}" oninput="debouncedSearch(this.value)"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:7px">
+    ${fl.map(m=>{const fc=FC[m.field]||{bg:'rgba(148,163,184,.1)',c:'#94a3b8'};return`<div class="card ${selMaj===m.id?'active':''}" onclick="SMJ('${m.id}')"><div class="card-title">${m.name}</div><div class="card-desc">${m.desc}</div><span class="card-field" style="background:${fc.bg};color:${fc.c}">${m.field}</span></div>`}).join('')}</div></div>
+    ${!mj?'<div class="empty"><div class="empty-icon">🎯</div><div class="empty-text">학과를 클릭하면 필요한 선택과목, 공부 전략,<br>지원 가능 대학이 나타납니다</div></div>':`
+    <div class="no-print print-options"><button class="print-btn" onclick="window.print()">🖨️ ${mj.name} 가이드 인쇄</button><button class="print-btn pdf" onclick="exportPDF()">📄 PDF 저장</button></div>
+    <div class="step"><div class="step-title"><div class="step-num">2</div><div class="step-label">${mj.name} — 선택과목 & 공부 전략</div></div>
+    <div class="strategy"><h3>📋 권장 선택과목</h3><div class="rec-subjects">${mj.rec.map(s=>`<span class="rec-chip ${mj.core.includes(s)?'core':''}">${s}</span>`).join('')}</div><p style="font-size:.72rem;color:var(--text3);margin-bottom:10px">★ = 핵심 필수 과목 (반드시 선택 권장)</p>
+    <h4>💡 전형 전략</h4><p>${mj.strategy}</p>
+    <h4>📖 학년별 공부 로드맵</h4><ul>${mj.studyTips.map(t=>`<li>${t}</li>`).join('')}</ul></div></div>
+    <div class="step"><div class="step-title"><div class="step-num">3</div><div class="step-label">${mj.name} — 지원 가능 대학 (${u.length}개교)</div></div>
+    <div class="filters no-print">${['전체','서울','경인','강원','충청','호남','대경','동남','제주'].map(r=>`<div class="fbtn ${regF===r?'active':''}" onclick="SR('${r}')">${r}</div>`).join('')}</div>
+    ${rUP(u)}</div>`}`;
+}
+
+
+// ========== 모드 D: 내신 로드맵 (학년별 과목) ==========
+function renderD(){
+  function gradeColor(g){
+    if(!g||g===0)return 'var(--text3)';
+    if(g<=2)return 'var(--green)';if(g<=3)return 'var(--accent)';if(g<=4)return 'var(--amber)';if(g<=5)return 'var(--accent3)';return 'var(--red)';
+  }
+  function gradeWidth(g){return g?Math.max(5,(9-g)/8*100):0}
+  function getSubjects(sem){
+    if(sem==='1-1'||sem==='1-2') return COMMON_SUBJ_1[sem]||[];
+    return userSubjects[sem]||[];
+  }
+  // 학기별 평균 계산
+  const semAvgs=SEMESTERS.map(s=>{
+    const subjs=getSubjects(s);
+    const vals=subjs.map(subj=>{const v=roadmapData[s+'_'+subj];return v?parseFloat(v):0}).filter(v=>v>0);
+    return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
+  });
+  const totalVals=Object.values(roadmapData).filter(v=>v&&parseFloat(v)>0).map(v=>parseFloat(v));
+  const totalAvg=totalVals.length?(totalVals.reduce((a,b)=>a+b)/totalVals.length):0;
+
+  // 학년 구분
+  const semGroups=[
+    {label:'1학년 (공통과목)',sems:['1-1','1-2'],note:'공통과목은 자동 설정됩니다'},
+    {label:'2학년 (선택과목)',sems:['2-1','2-2'],note:'이수하는 과목을 직접 추가하세요'},
+    {label:'3학년 (선택과목)',sems:['3-1'],note:'이수하는 과목을 직접 추가하세요'}
+  ];
+
+  let tablesHtml='';
+  semGroups.forEach(sg=>{
+    tablesHtml+=`<div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:.9rem;font-weight:700;color:var(--accent)">${sg.label}</span>
+        <span style="font-size:.68rem;color:var(--text3)">${sg.note}</span>
+      </div>
+      <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.8rem">
+        <thead><tr style="border-bottom:2px solid var(--border)">
+          <th style="padding:8px;text-align:left;color:var(--accent);min-width:100px">과목</th>
+          ${sg.sems.map(s=>'<th style="padding:8px;text-align:center;min-width:90px;color:var(--text2)">'+s+'</th>').join('')}
+        </tr></thead><tbody>`;
+
+    // 1학년: 학기별 공통과목 (1-1과 1-2 과목명이 다름)
+    if(sg.sems[0]==='1-1'){
+      const subj1=COMMON_SUBJ_1['1-1'];
+      const subj2=COMMON_SUBJ_1['1-2'];
+      const maxLen=Math.max(subj1.length,subj2.length);
+      for(let ri=0;ri<maxLen;ri++){
+        const s1=subj1[ri]||'';
+        const s2=subj2[ri]||'';
+        // 행 라벨: 공통 카테고리명 추출 (공통국어1→국어 계열)
+        const label=s1.replace(/[12]$/,'').replace('공통','').replace('통합','').replace('과학탐구실험','과탐')||s2.replace(/[12]$/,'').replace('공통','').replace('통합','').replace('과학탐구실험','과탐');
+        tablesHtml+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px;font-weight:600;font-size:.75rem;color:var(--text3)">'+label+'</td>';
+        // 1-1 열
+        if(s1){
+          const key='1-1_'+s1;
+          const v=roadmapData[key]||'';
+          tablesHtml+='<td style="padding:4px;text-align:center"><div style="font-size:.65rem;color:var(--text3);margin-bottom:2px">'+s1+'</div><input class="grade-input" type="number" min="1" max="9" step="0.1" placeholder="—" value="'+v+'" onchange="setRoadmap(&#39;'+key+'&#39;,this.value)"><div class="grade-bar"><div class="grade-bar-fill" style="width:'+gradeWidth(parseFloat(v))+'%;background:'+gradeColor(parseFloat(v))+'"></div></div></td>';
+        } else { tablesHtml+='<td></td>'; }
+        // 1-2 열
+        if(s2){
+          const key='1-2_'+s2;
+          const v=roadmapData[key]||'';
+          tablesHtml+='<td style="padding:4px;text-align:center"><div style="font-size:.65rem;color:var(--text3);margin-bottom:2px">'+s2+'</div><input class="grade-input" type="number" min="1" max="9" step="0.1" placeholder="—" value="'+v+'" onchange="setRoadmap(&#39;'+key+'&#39;,this.value)"><div class="grade-bar"><div class="grade-bar-fill" style="width:'+gradeWidth(parseFloat(v))+'%;background:'+gradeColor(parseFloat(v))+'"></div></div></td>';
+        } else { tablesHtml+='<td></td>'; }
+        tablesHtml+='</tr>';
+      }
+    } else {
+      // 2~3학년: 사용자 추가 과목
+      sg.sems.forEach(sem=>{
+        const subjs=userSubjects[sem]||[];
+        if(subjs.length===0&&sg.sems.length>1) return; // 빈 학기 스킵 방지 안 함
+      });
+      // 모든 학기의 과목을 합쳐서 표시 (학기별로 다를 수 있음)
+      const allSubjs=new Set();
+      sg.sems.forEach(sem=>(userSubjects[sem]||[]).forEach(s=>allSubjs.add(s)));
+      
+      if(allSubjs.size>0){
+        [...allSubjs].forEach(subj=>{
+          tablesHtml+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px;font-weight:600;display:flex;align-items:center;gap:4px">'+subj+'<button style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.7rem;padding:2px" onclick="removeUserSubject(&#39;'+subj+'&#39;,&#39;'+sg.sems.join(',')+'&#39;)">✕</button></td>';
+          sg.sems.forEach(s=>{
+            const hasSubj=(userSubjects[s]||[]).includes(subj);
+            if(hasSubj){
+              const key=s+'_'+subj;
+              const v=roadmapData[key]||'';
+              tablesHtml+='<td style="padding:4px;text-align:center"><input class="grade-input" type="number" min="1" max="9" step="0.1" placeholder="—" value="'+v+'" onchange="setRoadmap(&#39;'+key+'&#39;,this.value)"><div class="grade-bar"><div class="grade-bar-fill" style="width:'+gradeWidth(parseFloat(v))+'%;background:'+gradeColor(parseFloat(v))+'"></div></div></td>';
+            } else {
+              tablesHtml+='<td style="padding:4px;text-align:center;color:var(--text3);font-size:.7rem">미이수</td>';
+            }
+          });
+          tablesHtml+='</tr>';
+        });
+      }
+
+      // 과목 추가 UI
+      tablesHtml+='<tr><td colspan="'+(sg.sems.length+1)+'" style="padding:8px"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
+      sg.sems.forEach(sem=>{
+        tablesHtml+='<div style="display:flex;gap:4px;align-items:center"><span style="font-size:.7rem;color:var(--text3);min-width:28px">'+sem+':</span><input class="grade-input" id="addSubj_'+sem+'" placeholder="과목명 입력" style="width:100px;text-align:left;font-size:.72rem"><button class="action-btn primary" style="padding:4px 8px;font-size:.68rem" onclick="addUserSubject(&#39;'+sem+'&#39;)">+</button></div>';
+      });
+      tablesHtml+='</div></td></tr>';
+    }
+
+    // 평균 행
+    tablesHtml+='</tbody><tfoot><tr style="border-top:2px solid var(--border)"><td style="padding:8px;font-weight:700;color:var(--accent)">평균</td>';
+    sg.sems.forEach(s=>{
+      const idx=SEMESTERS.indexOf(s);
+      const a=semAvgs[idx];
+      tablesHtml+='<td style="padding:8px;text-align:center;font-weight:700;font-size:.95rem;color:'+gradeColor(a)+'">'+(a?a.toFixed(2):'—')+'</td>';
+    });
+    tablesHtml+='</tr></tfoot></table></div></div>';
+  });
+
+  return `
+    <div class="step"><div class="step-title"><div class="step-num">1</div><span class="step-label">학기별 목표 등급 설정</span></div>
+    <p style="font-size:.78rem;color:var(--text2);margin-bottom:12px">1학년은 공통과목이 자동 설정됩니다. 2~3학년은 본인이 선택한 과목을 직접 추가하세요.</p>
+    ${tablesHtml}</div>
+
+    <div class="step"><div class="step-title"><div class="step-num">2</div><span class="step-label">등급 추이 시각화</span></div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px">
+      <div style="display:flex;align-items:end;justify-content:space-around;height:180px;gap:8px;padding-bottom:24px;position:relative;border-bottom:1px solid var(--border)">
+        ${semAvgs.map((a,i)=>{
+          const h=a?(9-a)/8*150:0;
+          return '<div style="display:flex;flex-direction:column;align-items:center;flex:1"><div style="font-size:.7rem;font-weight:700;color:'+gradeColor(a)+';margin-bottom:4px">'+(a?a.toFixed(1):'—')+'</div><div style="width:36px;height:'+h+'px;border-radius:6px 6px 0 0;background:linear-gradient(180deg,'+gradeColor(a)+',rgba(56,189,248,.2));transition:height .5s"></div><div style="font-size:.68rem;color:var(--text3);margin-top:6px">'+SEMESTERS[i]+'</div></div>';
+        }).join('')}
+      </div>
+      <div style="text-align:center;margin-top:12px">
+        <span style="font-size:.82rem;color:var(--text2)">전체 평균 </span>
+        <span style="font-size:1.3rem;font-weight:800;color:${gradeColor(totalAvg)}">${totalAvg?totalAvg.toFixed(2):'미입력'}</span>
+      </div>
+    </div></div>
+
+    <div class="step"><div class="step-title"><div class="step-num">3</div><span class="step-label">데이터 관리</span></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="action-btn secondary" onclick="exportRoadmap()">📥 JSON 내보내기</button>
+      <button class="action-btn secondary" onclick="document.getElementById('roadmapFileInput').click()">📤 JSON 불러오기</button>
+      <input type="file" id="roadmapFileInput" accept=".json" style="display:none" onchange="importRoadmap(event)">
+      <button class="action-btn danger" onclick="if(confirm('로드맵 데이터를 초기화할까요?')){roadmapData={};userSubjects={'2-1':[],'2-2':[],'3-1':[]};localStorage.removeItem('roadmap');localStorage.removeItem('userSubjects');render()}">🗑️ 초기화</button>
+    </div></div>`;
+}
+
+
+// ========== 모드 E: 선택과목 시뮬레이터 ==========
+function renderE(){
+  // 선택된 과목으로 지원 가능한 학과·대학 미리보기
+  const simMatched=simSub.size?MAJORS.map(m=>{const mc=m.rec.filter(s=>simSub.has(s)).length;return{...m,mc,mr:mc/m.rec.length}}).filter(m=>m.mc>0).sort((a,b)=>b.mr-a.mr||b.mc-a.mc):[];
+
+  // 공식 권장과목 매칭
+  const officialMatches=[];
+  if(simSub.size){
+    Object.entries(OFFICIAL_REC).forEach(([field,info])=>{
+      const coreMatch=info.core.filter(s=>simSub.has(s));
+      const recMatch=info.rec.filter(s=>simSub.has(s));
+      if(coreMatch.length>0||recMatch.length>0){
+        officialMatches.push({field,coreMatch,recMatch,coreMiss:info.core.filter(s=>!simSub.has(s)),total:coreMatch.length*2+recMatch.length,depts:info.depts});
+      }
+    });
+    officialMatches.sort((a,b)=>b.total-a.total);
+  }
+
+  // 매칭 학과 기반 대학 검색
+  const simUnivs=[];
+  if(simMatched.length){
+    const matchedIds=new Set(simMatched.map(m=>m.id));
+    const matchedKW=new Set();
+    simMatched.forEach(m=>m.keywords.forEach(k=>matchedKW.add(k)));
+    UNIV_DB.forEach(u=>{
+      const validPg=u.pg.filter(p=>!SKIP.some(sk=>p.n.includes(sk)));
+      const matched=validPg.filter(p=>{
+        if(p.dept)return p.dept.some(d=>matchedKW.has(d.d)||simMatched.some(m=>m.keywords.some(k=>d.d.includes(k))));
+        return matchedKW.has(u.nm)||simMatched.some(m=>m.keywords.some(k=>u.nm.includes(k)));
+      });
+      if(matched.length)simUnivs.push({...u,matchedPg:matched,score:matched.length});
+    });
+    simUnivs.sort((a,b)=>b.score-a.score);
+  }
+
+  return `
+    <div class="step"><div class="step-title"><div class="step-num">1</div><span class="step-label">2학년 선택과목 조합을 시뮬레이션하세요</span></div>
+    <p style="font-size:.78rem;color:var(--text2);margin-bottom:12px">이수하려는 과목을 선택하면, 지원 가능한 학과·대학과 공식 권장과목 매칭 결과를 미리 볼 수 있습니다.</p>
+    ${SUBJECT_GROUPS.map(g=>'<span class="group-label">'+g.label+'</span><div class="chip-grid">'+g.subjects.map(s=>'<span class="chip '+(simSub.has(s)?'selected':'')+'" onclick="toggleSim(&#39;'+s+'&#39;)">'+s+'</span>').join('')+'</div>').join('')}
+    <div style="margin-top:8px;font-size:.75rem;color:var(--text3)">선택: ${simSub.size}개 과목${simSub.size?' — '+[...simSub].join(', '):''}</div>
+    ${simSub.size?'<button class="action-btn secondary" style="margin-top:6px;font-size:.72rem" onclick="simSub.clear();render()">초기화</button>':''}
+    </div>
+
+    ${officialMatches.length?`
+    <div class="step"><div class="step-title"><div class="step-num">2</div><span class="step-label">공식 권장과목 매칭 (5개 대학 공동연구)</span></div>
+    ${officialMatches.map(o=>`
+      <div class="sim-result">
+        <div style="font-weight:700;font-size:.9rem;margin-bottom:6px">${o.field} 분야</div>
+        <div style="font-size:.78rem;color:var(--text2);margin-bottom:4px">관련 학과: ${o.depts.slice(0,4).join(', ')}${o.depts.length>4?' 외 '+(o.depts.length-4)+'개':''}</div>
+        <div style="margin:6px 0">
+          ${o.coreMatch.map(s=>'<span class="sim-tag" style="background:rgba(52,211,153,.15);color:var(--green)">✓ 핵심 '+s+'</span>').join('')}
+          ${o.coreMiss.map(s=>'<span class="sim-tag" style="background:rgba(248,113,113,.1);color:var(--red)">✗ 핵심 미이수 '+s+'</span>').join('')}
+          ${o.recMatch.map(s=>'<span class="sim-tag" style="background:rgba(56,189,248,.12);color:var(--accent)">✓ 권장 '+s+'</span>').join('')}
+        </div>
+        <div style="height:6px;border-radius:3px;background:var(--card2);margin-top:8px"><div style="height:100%;border-radius:3px;width:${Math.round((o.coreMatch.length/(o.coreMatch.length+o.coreMiss.length))*100)}%;background:${o.coreMiss.length===0?'var(--green)':'var(--amber)'}"></div></div>
+        <div style="font-size:.68rem;color:var(--text3);margin-top:4px">핵심과목 이수율: ${o.coreMatch.length}/${o.coreMatch.length+o.coreMiss.length} ${o.coreMiss.length===0?'✅ 완벽':'⚠️ 미이수 과목 있음'}</div>
+      </div>
+    `).join('')}
+    </div>`:''}
+
+    ${simMatched.length?`
+    <div class="step"><div class="step-title"><div class="step-num">${officialMatches.length?'3':'2'}</div><span class="step-label">매칭 학과 (${simMatched.length}개)</span></div>
+    <div class="chip-grid">${simMatched.slice(0,20).map(m=>'<span class="chip selected" style="cursor:default">'+m.name+' <span style="color:var(--accent);font-size:.7rem">'+Math.round(m.mr*100)+'%</span></span>').join('')}${simMatched.length>20?'<span class="chip" style="cursor:default;color:var(--text3)">외 '+(simMatched.length-20)+'개</span>':''}</div>
+    </div>
+    <div class="step"><div class="step-title"><div class="step-num">${officialMatches.length?'4':'3'}</div><span class="step-label">지원 가능 대학 (${simUnivs.length}개)</span></div>
+    ${simUnivs.slice(0,15).map(u=>'<div class="card"><div class="card-title">'+u.nm+' <span style="font-size:.7rem;color:var(--text3)">'+u.rg+'·'+u.tp+'</span></div><div style="font-size:.75rem;color:var(--text2)">'+u.matchedPg.map(p=>p.n).join(', ')+'</div></div>').join('')}
+    ${simUnivs.length>15?'<div style="text-align:center;color:var(--text3);font-size:.78rem;padding:10px">외 '+(simUnivs.length-15)+'개 대학</div>':''}
+    </div>`:`
+    ${simSub.size?'<div class="empty-state"><div class="icon">🔍</div><p>선택한 과목 조합으로 매칭되는 학과가 없습니다.<br>과목을 추가해보세요.</p></div>':'<div class="empty-state"><div class="icon">🧪</div><p>위에서 과목을 선택하면<br>지원 가능한 학과와 대학이 표시됩니다</p></div>'}
+    `}`;
+}
+
+// ========== 모드 F: 학생 프로필 (개인 로그인 + 이력) ==========
+function renderF(){
+  if(!profileUser){
+    if(profileMode==='register'){
+      return `
+        <div style="max-width:420px;margin:0 auto">
+          <div class="profile-card">
+            <div style="text-align:center;margin-bottom:20px">
+              <div style="font-size:2.5rem;margin-bottom:8px">🔐</div>
+              <div style="font-size:1.1rem;font-weight:700">새 프로필 만들기</div>
+              <div style="font-size:.78rem;color:var(--text2);margin-top:4px">학번과 비밀번호를 설정하면 본인만 접근할 수 있습니다</div>
+            </div>
+            <input class="profile-input" id="reg_id" placeholder="학번 (예: 10101)" maxlength="10">
+            <input class="profile-input" id="reg_pw" type="password" placeholder="비밀번호 (4자리 이상)">
+            <input class="profile-input" id="reg_pw2" type="password" placeholder="비밀번호 확인">
+            <input class="profile-input" id="reg_name" placeholder="이름">
+            <div style="display:flex;gap:8px;margin-top:14px">
+              <button class="action-btn primary" onclick="doRegister()" style="flex:1">가입하기</button>
+              <button class="action-btn secondary" onclick="profileMode='login';render()">뒤로</button>
+            </div>
+          </div>
+        </div>`;
+    }
+    return `
+      <div style="max-width:420px;margin:0 auto">
+        <div class="profile-card">
+          <div style="text-align:center;margin-bottom:20px">
+            <div style="font-size:2.5rem;margin-bottom:8px">👩‍🎓</div>
+            <div style="font-size:1.1rem;font-weight:700">내 프로필 로그인</div>
+            <div style="font-size:.78rem;color:var(--text2);margin-top:4px">학번과 비밀번호로 본인 프로필에 접근합니다<br>다른 학생의 정보는 볼 수 없습니다</div>
+          </div>
+          <input class="profile-input" id="login_id" placeholder="학번 (예: 10101)" maxlength="10">
+          <input class="profile-input" id="login_pw" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()">
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="action-btn primary" onclick="doLogin()" style="flex:1">로그인</button>
+            <button class="action-btn secondary" onclick="profileMode='register';render()">처음이에요</button>
+          </div>
+          <div style="font-size:.68rem;color:var(--text3);margin-top:14px;text-align:center;line-height:1.6">
+            🔒 모든 데이터는 이 브라우저에만 저장됩니다<br>서버로 전송되지 않으며, 다른 사람이 볼 수 없습니다
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // === 로그인된 상태 ===
+  const p=profileData;
+  if(!p.gradeHistory)p.gradeHistory=[];
+  if(!p.majorHistory)p.majorHistory=[];
+  if(!p.journal)p.journal=[];
+
+  // 서브탭 네비게이션
+  const subTabs=['view','grades','journal','edit'];
+  const subLabels={'view':'📋 내 정보','grades':'📊 성적 추이','journal':'📝 상담일지','edit':'✏️ 수정'};
+  const activeTab=['view','edit'].includes(profileMode)?profileMode:profileMode;
+  const subTabHtml='<div style="display:flex;gap:0;margin-bottom:16px;background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3px;max-width:500px">'+subTabs.map(t=>'<button style="flex:1;padding:7px 10px;border-radius:17px;border:none;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;'+(profileMode===t?'background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff':'background:transparent;color:var(--text2)')+'" onclick="profileMode=&#39;'+t+'&#39;;render()">'+subLabels[t]+'</button>').join('')+'</div>';
+
+  // 헤더 (공통)
+  const headerHtml=`
+    <div style="max-width:650px;margin:0 auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;color:#fff">${p.name?p.name[0]:'?'}</div>
+          <div><span style="font-weight:700">${p.name||'이름 미설정'}</span> <span style="font-size:.72rem;color:var(--text3)">${profileUser}</span></div>
+        </div>
+        <button class="action-btn secondary" onclick="profileLogout()" style="font-size:.7rem;padding:5px 10px">🔓 로그아웃</button>
+      </div>
+      ${subTabHtml}`;
+  const footerHtml=`
+      <div style="font-size:.65rem;color:var(--text3);margin-top:20px;text-align:center">🔒 이 브라우저에만 저장 · 서버 전송 없음</div>
+    </div>`;
+
+  // === 수정 모드 ===
+  if(profileMode==='edit'){
+    return headerHtml+`
+      <div class="profile-card">
+        <div style="font-weight:700;margin-bottom:12px">기본 정보 수정</div>
+        <input class="profile-input" id="ed_name" placeholder="이름" value="${p.name||''}">
+        <input class="profile-input" id="ed_grade" type="number" min="1" max="9" step="0.1" placeholder="현재 평균등급" value="${p.grade||''}">
+        <input class="profile-input" id="ed_major" placeholder="희망학과 (예: 컴퓨터공학)" value="${p.major||''}">
+        <input class="profile-input" id="ed_target" placeholder="목표대학 (예: 서울대)" value="${p.target||''}">
+        <textarea class="profile-textarea" id="ed_activities" placeholder="주요 활동이력 (수상, 동아리, 봉사 등)">${p.activities||''}</textarea>
+        <textarea class="profile-textarea" id="ed_memo" placeholder="나만의 메모" style="margin-top:8px">${p.memo||''}</textarea>
+        <div style="display:flex;gap:8px;margin-top:14px">
+          <button class="action-btn primary" onclick="doSaveProfile()">저장</button>
+          <button class="action-btn secondary" onclick="profileMode='view';render()">취소</button>
+        </div>
+        <div style="font-size:.68rem;color:var(--text3);margin-top:10px">💡 등급이나 희망학과를 변경하면 자동으로 이력에 기록됩니다</div>
+      </div>`+footerHtml;
+  }
+
+  // === 성적 추이 모드 ===
+  if(profileMode==='grades'){
+    const gh=p.gradeHistory||[];
+    // 성적 기록 입력 폼 + 기존 이력 + 그래프
+    function gradeColor(g){if(!g)return 'var(--text3)';if(g<=2)return 'var(--green)';if(g<=3)return 'var(--accent)';if(g<=4)return 'var(--amber)';if(g<=5)return 'var(--accent3)';return 'var(--red)'}
+    const chartHtml=gh.length>=2?`
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px">
+        <div style="font-size:.78rem;font-weight:600;margin-bottom:10px;color:var(--accent)">📈 등급 변화 그래프</div>
+        <div style="display:flex;align-items:end;justify-content:space-around;height:140px;gap:6px;padding-bottom:20px;border-bottom:1px solid var(--border)">
+          ${gh.map(h=>{const ht=h.grade?(9-h.grade)/8*120:0;return '<div style="display:flex;flex-direction:column;align-items:center;flex:1"><div style="font-size:.65rem;font-weight:700;color:'+gradeColor(h.grade)+';margin-bottom:3px">'+h.grade+'</div><div style="width:28px;height:'+ht+'px;border-radius:5px 5px 0 0;background:linear-gradient(180deg,'+gradeColor(h.grade)+',rgba(56,189,248,.15))"></div><div style="font-size:.55rem;color:var(--text3);margin-top:4px;white-space:nowrap">'+h.date.slice(5)+'</div></div>'}).join('')}
+        </div>
+        ${gh.length>=2?'<div style="text-align:center;margin-top:8px;font-size:.75rem">변화: <span style="font-weight:700;color:'+(gh[gh.length-1].grade<=gh[0].grade?'var(--green)':'var(--red)')+'">'+gh[0].grade+' → '+gh[gh.length-1].grade+' ('+(gh[gh.length-1].grade<gh[0].grade?'▲':'▼')+Math.abs(gh[gh.length-1].grade-gh[0].grade).toFixed(1)+')</span></div>':''}
+      </div>`:'';
+
+    return headerHtml+`
+      <div class="profile-card">
+        <div style="font-weight:700;margin-bottom:10px">📊 성적 기록 추가</div>
+        <div style="display:flex;gap:8px;align-items:end">
+          <div style="flex:1">
+            <div style="font-size:.7rem;color:var(--text3);margin-bottom:4px">시험 구분</div>
+            <select class="profile-input" id="gr_exam" style="margin-bottom:0">
+              <option value="1학기 중간">1학기 중간</option><option value="1학기 기말">1학기 기말</option>
+              <option value="2학기 중간">2학기 중간</option><option value="2학기 기말">2학기 기말</option>
+              <option value="모의고사">모의고사</option><option value="기타">기타</option>
+            </select>
+          </div>
+          <div style="width:90px">
+            <div style="font-size:.7rem;color:var(--text3);margin-bottom:4px">평균등급</div>
+            <input class="profile-input" id="gr_grade" type="number" min="1" max="9" step="0.1" placeholder="등급" style="margin-bottom:0">
+          </div>
+          <button class="action-btn primary" onclick="addGradeRecord()" style="padding:8px 14px;white-space:nowrap">+ 기록</button>
+        </div>
+      </div>
+      ${chartHtml}
+      ${gh.length?`
+      <div class="profile-card">
+        <div style="font-weight:700;margin-bottom:10px">📋 전체 기록 (${gh.length}건)</div>
+        ${[...gh].reverse().map((h,i)=>'<div style="display:flex;align-items:center;gap:10px;padding:8px 0;'+(i<gh.length-1?'border-bottom:1px solid var(--border)':'')+'"><div style="font-size:.72rem;color:var(--text3);min-width:70px">'+h.date+'</div><div style="flex:1;font-size:.8rem">'+(h.exam||'')+'</div><div style="font-weight:700;font-size:.9rem;color:'+gradeColor(h.grade)+'">'+h.grade+'등급</div><div style="font-size:.65rem;color:var(--text3)">'+(h.prev!=='없음'?'← '+h.prev:'첫 기록')+'</div><button style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:.7rem" onclick="deleteGradeRecord('+(gh.length-1-i)+')">✕</button></div>').join('')}
+      </div>`:
+      '<div class="empty-state"><div class="icon">📊</div><p>아직 성적 기록이 없습니다<br>위에서 시험 결과를 입력해보세요</p></div>'}
+    `+footerHtml;
+  }
+
+  // === 상담일지 모드 ===
+  if(profileMode==='journal'){
+    const jl=p.journal||[];
+    return headerHtml+`
+      <div class="profile-card">
+        <div style="font-weight:700;margin-bottom:10px">📝 새 일지 작성</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <div style="flex:1">
+            <div style="font-size:.7rem;color:var(--text3);margin-bottom:4px">분류</div>
+            <select class="profile-input" id="jn_type" style="margin-bottom:0">
+              <option value="📌 진로상담">📌 진로상담</option><option value="📊 성적분석">📊 성적분석</option>
+              <option value="🎯 목표설정">🎯 목표설정</option><option value="💭 고민/질문">💭 고민/질문</option>
+              <option value="✅ 활동기록">✅ 활동기록</option><option value="📝 기타">📝 기타</option>
+            </select>
+          </div>
+        </div>
+        <textarea class="profile-textarea" id="jn_content" placeholder="오늘의 상담 내용, 느낀 점, 다음 목표 등을 자유롭게 적어보세요..." style="min-height:80px"></textarea>
+        <button class="action-btn primary" onclick="addJournal()" style="margin-top:8px">저장</button>
+      </div>
+      ${jl.length?`
+      <div style="font-weight:700;font-size:.85rem;margin:16px 0 10px">📅 일지 타임라인 (${jl.length}건)</div>
+      ${[...jl].reverse().map((j,i)=>`
+        <div class="profile-card" style="margin-bottom:8px;position:relative">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div><span style="font-size:.72rem;padding:2px 8px;border-radius:8px;background:rgba(56,189,248,.1);color:var(--accent)">${j.type}</span> <span style="font-size:.68rem;color:var(--text3);margin-left:4px">${j.date}</span></div>
+            <button style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:.72rem" onclick="deleteJournal(${jl.length-1-i})">삭제</button>
+          </div>
+          <p style="font-size:.82rem;color:var(--text2);line-height:1.65;white-space:pre-wrap">${j.content}</p>
+        </div>
+      `).join('')}`:
+      '<div class="empty-state"><div class="icon">📝</div><p>아직 일지가 없습니다<br>상담 내용이나 느낀 점을 기록해보세요</p></div>'}
+    `+footerHtml;
+  }
+
+  // === 내 정보 보기 (기본) ===
+  let recHtml='';
+  if(p.major){
+    const mj=MAJORS.find(m=>m.name===p.major||m.keywords.some(k=>p.major.includes(k)));
+    if(mj){
+      recHtml='<div style="margin-top:16px"><span class="group-label">🎯 희망학과 기반 권장 선택과목</span><div class="chip-grid" style="margin-top:6px">'+mj.rec.map(s=>'<span class="chip selected" style="cursor:default">'+s+'</span>').join('')+'</div><div style="margin-top:8px;font-size:.78rem;color:var(--text2);background:var(--card2);border-radius:8px;padding:12px;line-height:1.6">💡 <b>'+mj.name+'</b> 전략: '+mj.strategy+'</div></div>';
+    }
+  }
+
+  // 희망학과 변경 타임라인 (최근 3개)
+  const mh=p.majorHistory||[];
+  const majorTimelineHtml=mh.length?'<div style="margin-top:14px"><span class="group-label">🔄 희망학과 변경 이력</span>'+mh.slice(-3).reverse().map(h=>'<div style="font-size:.75rem;color:var(--text2);padding:4px 0"><span style="color:var(--text3)">'+h.date+'</span> '+h.prev+' → <span style="font-weight:600;color:var(--accent)">'+h.major+'</span></div>').join('')+'</div>':'';
+
+  // 최근 성적 미니 요약
+  const recentGrades=(p.gradeHistory||[]).slice(-3);
+  const gradeMinHtml=recentGrades.length?'<div style="margin-top:14px"><span class="group-label">📊 최근 성적</span><div style="display:flex;gap:6px;margin-top:4px">'+recentGrades.map(h=>{const gc=h.grade<=2?'var(--green)':h.grade<=3?'var(--accent)':h.grade<=4?'var(--amber)':'var(--red)';return '<div style="background:var(--card2);border-radius:8px;padding:8px 12px;text-align:center"><div style="font-size:1rem;font-weight:700;color:'+gc+'">'+h.grade+'</div><div style="font-size:.6rem;color:var(--text3)">'+h.date.slice(5)+'</div></div>'}).join('')+'</div></div>':'';
+
+  return headerHtml+`
+    <div class="profile-card">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+        <div class="stat"><div class="stat-num">${p.grade||'—'}</div><div class="stat-label">현재 평균등급</div></div>
+        <div class="stat"><div class="stat-num">${p.major||'—'}</div><div class="stat-label">희망학과</div></div>
+        <div class="stat"><div class="stat-num">${p.target||'—'}</div><div class="stat-label">목표대학</div></div>
+      </div>
+      ${p.activities?'<div style="background:var(--card2);border-radius:8px;padding:12px;margin-top:8px"><span class="group-label">📋 주요 활동이력</span><p style="font-size:.82rem;color:var(--text2);line-height:1.6;white-space:pre-wrap;margin-top:6px">'+p.activities+'</p></div>':''}
+      ${gradeMinHtml}
+      ${majorTimelineHtml}
+      ${recHtml}
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="action-btn secondary" style="font-size:.72rem" onclick="doExportMyProfile()">📥 내 데이터 내보내기</button>
+      <button class="action-btn danger" style="font-size:.72rem" onclick="if(confirm('정말 프로필을 삭제할까요?\n모든 성적 기록과 일지가 사라집니다.')){localStorage.removeItem('profile_'+profileUser);profileLogout()}">🗑️ 프로필 삭제</button>
+    </div>
+  `+footerHtml;
+}
+
+
+function renderG(){
+  const faqs=[
+    {cat:'시작하기',icon:'🚀',items:[
+      {q:'입시 나침반은 어떤 앱인가요?',a:'2022 개정 교육과정 기반으로, 내가 선택한 과목이 어떤 학과·대학과 연결되는지 양방향으로 탐색할 수 있는 진로진학 도구입니다. 100개 대학의 학생부종합전형 데이터가 내장되어 있습니다.'},
+      {q:'회원가입이 필요한가요?',a:'"내 프로필" 탭에서 학번과 비밀번호를 설정하면 됩니다. 모든 데이터는 브라우저에만 저장되며 서버로 전송되지 않으므로 안심하세요.'},
+      {q:'모바일에서도 사용할 수 있나요?',a:'네! 반응형 디자인이라 스마트폰에서도 잘 작동합니다. 탭은 좌우로 스와이프하세요.'},
+    ]},
+    {cat:'🔐 내 프로필',icon:'👩‍🎓',items:[
+      {q:'비밀번호를 잊으면 어떻게 하나요?',a:'현재는 비밀번호 찾기 기능이 없습니다. 브라우저 개발자도구(F12) → Application → Local Storage에서 profile_학번 데이터를 삭제하고 다시 가입할 수 있습니다.'},
+      {q:'다른 사람이 내 프로필을 볼 수 있나요?',a:'같은 브라우저·같은 기기에서 학번+비밀번호를 알아야만 접근 가능합니다. 로그아웃하면 다른 사람이 볼 수 없습니다.'},
+      {q:'성적 추이는 어떻게 기록하나요?',a:'로그인 후 "📊 성적 추이" 서브탭에서 시험 구분(중간/기말/모의고사)을 선택하고 등급을 입력하면 됩니다. 기록이 쌓이면 그래프가 자동으로 그려집니다.'},
+      {q:'상담일지는 누가 쓰나요?',a:'학생 본인이 자유롭게 씁니다. 진로 상담 후 느낀 점, 목표 변경 이유, 활동 기록 등을 날짜별로 쌓아가세요.'},
+    ]},
+    {cat:'📈 내신 로드맵',icon:'📊',items:[
+      {q:'1학년 과목이 이미 정해져 있는데요?',a:'1학년은 제주여고 공통과목이 자동으로 설정되어 있습니다. 공통국어1, 공통수학1 등 학기별로 다른 과목이 표시됩니다.'},
+      {q:'2~3학년 과목은 어떻게 추가하나요?',a:'2학년/3학년 섹션 아래에 과목명을 입력하고 + 버튼을 누르세요. 학기별로 다른 과목도 추가 가능합니다.'},
+      {q:'등급을 수정하면 어떻게 되나요?',a:'그 자리에서 바로 수정됩니다. 평균도 자동으로 재계산되고, 그래프도 업데이트됩니다.'},
+    ]},
+    {cat:'📚 과목 → 학과',icon:'🔍',items:[
+      {q:'과목을 선택하면 뭐가 나오나요?',a:'선택한 과목과 관련된 학과가 매칭률(%)과 함께 나타납니다. 학과를 클릭하면 해당 학과로 지원 가능한 100개 대학이 표시됩니다.'},
+      {q:'내 등급으로 필터링은 어떻게 하나요?',a:'내 프로필에 등급을 입력해두면 자동으로 연동됩니다. 또는 슬라이더로 직접 설정할 수도 있습니다. 대학 옆에 ✅안정, 🔶적정, 🔺도전, ⬆상향 뱃지가 표시됩니다.'},
+      {q:'안정/적정/도전/상향은 무슨 뜻인가요?',a:'합격자 평균등급 대비 내 등급의 차이입니다.<br>✅ <b>안정</b>: 합격자 평균보다 1등급 이상 여유<br>🔶 <b>적정</b>: 0.3~1등급 여유<br>🔺 <b>도전</b>: 합격선 근처 (±0.3)<br>⬆ <b>상향</b>: 합격자 평균보다 등급이 낮음'},
+    ]},
+    {cat:'🎯 학과 → 과목·전략',icon:'🎯',items:[
+      {q:'학과를 선택하면 뭐가 나오나요?',a:'해당 학과에 필요한 권장 선택과목, 입시 전략 조언, 그리고 지원 가능한 대학 목록이 나옵니다.'},
+      {q:'공식 권장과목이 뭔가요?',a:'서울대·연세대·고려대·성균관대·한양대 5개 대학이 공동으로 발표한 14개 학문분야별 권장 선택과목입니다. 핵심과목과 권장과목으로 나뉩니다.'},
+    ]},
+    {cat:'🔬 과목 시뮬레이터',icon:'🧪',items:[
+      {q:'"과목→학과"와 뭐가 다른가요?',a:'과목 시뮬레이터는 아직 이수하지 않은 과목을 "미리 시뮬레이션"하는 데 초점이 맞춰져 있습니다. 2학년 선택과목 조합을 이것저것 바꿔보면서 어떤 학과·대학이 열리는지 탐색할 수 있습니다.'},
+      {q:'핵심과목 이수율이 뭔가요?',a:'5개 대학 공동연구에서 정한 핵심과목 중 내가 이수할 과목의 비율입니다. 100%면 해당 분야 지원에 최적의 과목 조합입니다.'},
+    ]},
+    {cat:'🤝 집단지성 DB',icon:'📤',items:[
+      {q:'기여하기는 어떻게 하나요?',a:'DB 관리 탭에서 대학명·전형명·모집인원·전형방법 등을 입력하고 "기여하기" 버튼을 누르면 됩니다. 같은 대학을 입력하면 기존 데이터에 전형이 추가됩니다.'},
+      {q:'잘못된 정보를 입력하면 어떻게 되나요?',a:'같은 대학·같은 전형명으로 다시 입력하면 정보가 업데이트됩니다. 기여 내역에서 누가 언제 무엇을 입력했는지 확인할 수 있습니다.'},
+      {q:'어디서 전형 정보를 찾나요?',a:'각 대학 입학처 홈페이지의 모집요강, 대입정보포털(adiga.kr), 또는 학종 가이드북을 참고하세요. 출처 URL도 함께 입력하면 더 좋습니다.'},
+    ]},
+    {cat:'주의사항',icon:'⚠️',items:[
+      {q:'이 앱의 정보는 정확한가요?',a:'2027학년도 학생부종합전형 가이드북(한눈에보는전형 시리즈)을 기반으로 하되, 학생 기여 데이터도 포함되어 있습니다. <b>실제 지원 시 반드시 해당 대학 모집요강을 직접 확인</b>하세요.'},
+      {q:'데이터가 날아가면 어떡하나요?',a:'프로필·내신 로드맵 데이터는 브라우저 localStorage에 저장됩니다. 브라우저 데이터 삭제 시 사라질 수 있으니, "내보내기" 기능으로 주기적으로 백업하세요.'},
+    ]},
+  ];
+
+  return `
+    <div style="max-width:800px;margin:0 auto">
+      <div class="step"><div class="step-title"><div class="step-num">?</div><span class="step-label">입시 나침반 사용 가이드</span></div>
+      <p style="font-size:.78rem;color:var(--text2);margin-bottom:16px">궁금한 항목을 클릭하면 답변이 펼쳐집니다. 탭별로 분류되어 있어요.</p>
+      ${faqs.map(cat=>`
+        <div style="margin-bottom:16px">
+          <div style="font-size:.88rem;font-weight:700;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px">${cat.icon} ${cat.cat}</div>
+          ${cat.items.map((f,i)=>`
+            <details style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;overflow:hidden">
+              <summary style="padding:12px 16px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text);list-style:none;display:flex;align-items:center;gap:8px">
+                <span style="color:var(--accent);font-size:.75rem;flex-shrink:0">Q</span>${f.q}
+              </summary>
+              <div style="padding:0 16px 14px 40px;font-size:.78rem;color:var(--text2);line-height:1.7">${f.a}</div>
+            </details>
+          `).join('')}
+        </div>
+      `).join('')}
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:12px;text-align:center">
+        <div style="font-size:.85rem;font-weight:700;margin-bottom:6px">더 궁금한 점이 있나요?</div>
+        <div style="font-size:.75rem;color:var(--text2)">담임 선생님에게 문의하거나, DB 관리 탭의 기여 내역에서 다른 학생들의 활동을 참고해보세요.</div>
+      </div>
+    </div>`;
+}
+
+function renderC(){
+  const univCount=UNIV_DB.length, progCount=UNIV_DB.reduce((s,u)=>s+u.pg.length,0), quotaTotal=UNIV_DB.reduce((s,u)=>s+u.pg.reduce((ss,p)=>ss+p.q,0),0);
+  
+  // 데이터 품질 분석
+  const regions=['서울','경인','강원','충청','호남','대경','동남','제주'];
+  const regionStats=regions.map(r=>{
+    const us=UNIV_DB.filter(u=>u.rg===r);
+    const pgs=us.reduce((s,u)=>s+u.pg.length,0);
+    const qt=us.reduce((s,u)=>s+u.pg.reduce((ss,p)=>ss+p.q,0),0);
+    const withDept=us.filter(u=>u.pg.some(p=>p.dept&&p.dept.length>0)).length;
+    const withCR=us.reduce((s,u)=>s+u.pg.filter(p=>p.cr).length,0);
+    return {r,count:us.length,pgs,qt,withDept,withCR};
+  });
+  
+  // 대학별 데이터 품질 목록
+  const univDetails=UNIV_DB.map(u=>{
+    const pgs=u.pg.length;
+    const hasDept=u.pg.some(p=>p.dept&&p.dept.length>0);
+    const deptCount=u.pg.reduce((s,p)=>s+(p.dept?p.dept.length:0),0);
+    const hasCR=u.pg.some(p=>p.cr);
+    const crCount=u.pg.filter(p=>p.cr).length;
+    const hasIntv=u.pg.some(p=>p.iv);
+    const hasMn=u.pg.some(p=>p.mn);
+    const totalQ=u.pg.reduce((s,p)=>s+p.q,0);
+    // 데이터 완성도 점수 (0~5)
+    let score=0;
+    if(pgs>0)score++;       // 전형 데이터 있음
+    if(hasCR)score++;        // 경쟁률 있음
+    if(hasIntv||hasMn)score++; // 면접/수능최저 있음
+    if(hasDept)score++;      // 학과별 데이터
+    if(deptCount>=3)score++; // 학과 3개 이상
+    return {...u,pgs,hasDept,deptCount,hasCR,crCount,hasIntv,hasMn,totalQ,score};
+  }).sort((a,b)=>a.score-b.score); // 낮은 점수 먼저 (보완 필요한 대학 상단)
+  
+  const scoreColors=['var(--red)','var(--red)','var(--amber)','var(--amber)','var(--green)','var(--green)'];
+  const scoreLabels=['매우 부족','부족','기본','양호','우수','완전'];
+  
+  // DB 필터 상태
+  const dbFilterRegion=window._dbFilterRegion||'전체';
+  const dbFilterScore=window._dbFilterScore||'전체';
+  const dbSearchText=window._dbSearchText||'';
+  
+  let filtered=univDetails;
+  if(dbFilterRegion!=='전체') filtered=filtered.filter(u=>u.rg===dbFilterRegion);
+  if(dbFilterScore!=='전체') filtered=filtered.filter(u=>u.score<=parseInt(dbFilterScore));
+  if(dbSearchText) filtered=filtered.filter(u=>u.nm.includes(dbSearchText));
+  
+  return `<div class="step"><div class="step-title"><div class="step-num">⚙</div><div class="step-label">DB 관리 — 데이터 현황 & 업데이트</div></div>
+    
+    <div class="db-panel"><h3>📊 DB 현황 요약</h3>
+    <div class="db-info" style="grid-template-columns:repeat(5,1fr)">
+      <div class="db-info-item"><div class="val">${univCount}</div><div class="lbl">대학</div></div>
+      <div class="db-info-item"><div class="val">${progCount}</div><div class="lbl">학종 전형</div></div>
+      <div class="db-info-item"><div class="val">${quotaTotal.toLocaleString()}</div><div class="lbl">총 모집인원</div></div>
+      <div class="db-info-item"><div class="val">${UNIV_DB.filter(u=>u.pg.some(p=>p.dept)).length}</div><div class="lbl">학과별 데이터</div></div>
+      <div class="db-info-item"><div class="val">${UNIV_DB.reduce((s,u)=>s+u.pg.filter(p=>p.cr).length,0)}</div><div class="lbl">경쟁률 보유</div></div>
+    </div>
+    <div style="font-size:.75rem;color:var(--text2);margin-top:8px">버전: <b>${dbMeta.version}</b> · 업데이트: ${dbMeta.date} · 소스: ${dbMeta.source}</div>
+    </div>
+
+    <div class="db-panel"><h3>🗺️ 권역별 현황</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:6px">
+      ${regionStats.map(rs=>`
+        <div style="background:var(--card2);border-radius:8px;padding:10px;border:1px solid var(--border)">
+          <div style="font-size:.8rem;font-weight:700;margin-bottom:4px">${rs.r}</div>
+          <div style="font-size:.68rem;color:var(--text2);line-height:1.7">
+            대학 <b style="color:var(--text)">${rs.count}</b>개<br>
+            전형 <b style="color:var(--text)">${rs.pgs}</b>개<br>
+            모집 <b style="color:var(--text)">${rs.qt.toLocaleString()}</b>명<br>
+            학과DB <span style="color:${rs.withDept>0?'var(--green)':'var(--red)'}"><b>${rs.withDept}</b>/${rs.count}</span><br>
+            경쟁률 <span style="color:${rs.withCR>0?'var(--green)':'var(--red)'}"><b>${rs.withCR}</b>/${rs.pgs}</span>
+          </div>
+        </div>
+      `).join('')}
+    </div></div>
+
+    <div class="db-panel"><h3>🏫 대학별 데이터 현황 (${filtered.length}/${univCount}개)</h3>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px" class="no-print">
+      <input style="flex:1;min-width:150px;padding:6px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.78rem;font-family:inherit" placeholder="🔍 대학명 검색..." value="${dbSearchText}" oninput="window._dbSearchText=this.value;render()">
+      <select style="padding:6px 10px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.78rem;font-family:inherit" onchange="window._dbFilterRegion=this.value;render()">
+        <option value="전체" ${dbFilterRegion==='전체'?'selected':''}>전체 권역</option>
+        ${regions.map(r=>`<option value="${r}" ${dbFilterRegion===r?'selected':''}>${r}</option>`).join('')}
+      </select>
+      <select style="padding:6px 10px;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.78rem;font-family:inherit" onchange="window._dbFilterScore=this.value;render()">
+        <option value="전체" ${dbFilterScore==='전체'?'selected':''}>전체 완성도</option>
+        <option value="1" ${dbFilterScore==='1'?'selected':''}>⚠️ 보완 필요 (0~1점)</option>
+        <option value="2" ${dbFilterScore==='2'?'selected':''}>📝 기본 수준 (0~2점)</option>
+        <option value="3" ${dbFilterScore==='3'?'selected':''}>✅ 양호 이하 (0~3점)</option>
+      </select>
+    </div>
+    <div style="max-height:500px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+    <table class="utbl" style="font-size:.72rem">
+      <thead style="position:sticky;top:0;background:var(--card2);z-index:1"><tr>
+        <th style="width:20%">대학명</th>
+        <th style="width:7%">권역</th>
+        <th style="width:7%">설립</th>
+        <th style="width:8%">전형수</th>
+        <th style="width:10%">모집인원</th>
+        <th style="width:8%">경쟁률</th>
+        <th style="width:8%">학과DB</th>
+        <th style="width:8%">면접</th>
+        <th style="width:8%">수능최저</th>
+        <th style="width:16%">완성도</th>
+      </tr></thead>
+      <tbody>
+      ${filtered.map(u=>{
+        const sc=scoreColors[u.score];
+        const sl=scoreLabels[u.score];
+        const barW=Math.round(u.score/5*100);
+        return `<tr>
+          <td class="uname">${u.nm}</td>
+          <td>${u.rg}</td>
+          <td>${u.tp}</td>
+          <td>${u.pgs}개</td>
+          <td>${u.totalQ.toLocaleString()}명</td>
+          <td>${u.hasCR?`<span style="color:var(--green)">${u.crCount}/${u.pgs}</span>`:'<span style="color:var(--red)">없음</span>'}</td>
+          <td>${u.hasDept?`<span style="color:var(--green)">${u.deptCount}개</span>`:'<span style="color:var(--red)">없음</span>'}</td>
+          <td>${u.hasIntv?'<span style="color:var(--green)">O</span>':'<span style="color:var(--text3)">-</span>'}</td>
+          <td>${u.hasMn?'<span style="color:var(--green)">O</span>':'<span style="color:var(--text3)">-</span>'}</td>
+          <td><div style="display:flex;align-items:center;gap:4px"><div style="flex:1;height:4px;background:var(--border);border-radius:2px"><div style="height:100%;width:${barW}%;background:${sc};border-radius:2px"></div></div><span style="font-size:.6rem;color:${sc};font-weight:600;white-space:nowrap">${u.score}/5 ${sl}</span></div></td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>
+    </div>
+    <div style="font-size:.68rem;color:var(--text3);margin-top:8px">
+      완성도 기준: ①전형데이터 ②경쟁률 ③면접/수능최저 ④학과별 데이터 ⑤학과3개 이상 — 각 1점, 총 5점
+    </div></div>
+
+    <div class="db-panel"><h3>🤝 전형 정보 기여 (집단지성 DB)</h3>
+    <p style="font-size:.78rem;color:var(--text2);margin-bottom:12px">관심 있는 대학의 전형 정보를 직접 입력하면 모두가 함께 쓰는 DB가 됩니다. 📊</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">대학명 *</div>
+        <input class="profile-input" id="ct_univ" placeholder="예: 제주대학교" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">권역</div>
+        <select class="profile-input" id="ct_region" style="margin-bottom:0">
+          <option value="">선택</option><option value="서울">서울</option><option value="경인">경인</option><option value="강원">강원</option>
+          <option value="충청">충청</option><option value="호남">호남</option><option value="대경">대경</option><option value="동남">동남</option><option value="제주">제주</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">전형명 *</div>
+        <input class="profile-input" id="ct_pg" placeholder="예: 학생부종합(활동우수형)" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">모집인원</div>
+        <input class="profile-input" id="ct_quota" type="number" placeholder="숫자만" style="margin-bottom:0">
+      </div>
+      <div style="grid-column:1/-1">
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">전형방법</div>
+        <input class="profile-input" id="ct_method" placeholder="예: 1단계)서류100%(3배수) 2단계)서류70%+면접30%" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">면접 비율(%)</div>
+        <input class="profile-input" id="ct_iv" type="number" placeholder="없으면 비워두세요" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">수능최저</div>
+        <input class="profile-input" id="ct_min" placeholder="예: 3개합7 / 없음" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">기여자 이름</div>
+        <input class="profile-input" id="ct_name" placeholder="닉네임 또는 학번" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">출처 URL (선택)</div>
+        <input class="profile-input" id="ct_source" placeholder="모집요강 링크 등" style="margin-bottom:0">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="action-btn primary" onclick="submitContribution()">📤 기여하기</button>
+      <button class="action-btn secondary" onclick="loadContribLog()">📋 기여 내역 보기</button>
+    </div>
+    <div id="contribResult" style="margin-top:10px"></div>
+    <div id="contribLog" style="margin-top:10px"></div>
+    </div>
+
+    <div class="db-panel"><h3>📥 DB 업데이트</h3>
+    <p style="font-size:.78rem;color:var(--text2);margin-bottom:10px">새 JSON 파일을 업로드하면 DB가 교체됩니다. 기존 DB에 대학을 추가하려면 JSON에 해당 대학만 포함하여 "병합 업로드"를 사용하세요.</p>
+    <div class="db-upload-area" id="dropZone" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('fileInput').click()">
+      <div style="font-size:2rem;margin-bottom:8px">📁</div>
+      <div style="font-size:.85rem;color:var(--text)">JSON 파일을 드래그하거나 클릭하여 업로드</div>
+      <div style="font-size:.72rem;color:var(--text3);margin-top:4px">전체 교체 또는 병합 업로드</div>
+    </div>
+    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleFileSelect(event)">
+    <div class="db-actions">
+      <button class="db-btn primary" onclick="mergeUpload()">🔀 병합 업로드 (기존 DB에 추가/갱신)</button>
+      <button class="db-btn" onclick="exportDB()">📤 현재 DB 내보내기</button>
+      <button class="db-btn danger" onclick="resetDB()">🔄 내장 DB로 초기화</button>
+    </div>
+    ${dbLog.length?`<div class="db-log">${dbLog.join('<br>')}</div>`:''}
+    </div>
+
+    <div class="db-panel"><h3>📋 DB 표준 규격</h3>
+    <p style="font-size:.78rem;color:var(--text2);line-height:1.7">
+    <code style="font-size:.7rem;background:var(--bg);padding:8px 10px;border-radius:6px;display:block;margin:6px 0;color:var(--accent);line-height:2">
+    [{<br>&nbsp;&nbsp;"nm": "대학명",<br>&nbsp;&nbsp;"rg": "서울|경인|강원|충청|호남|대경|동남|제주",<br>&nbsp;&nbsp;"lc": "시도명", "tp": "국립|사립|공립|특수",<br>&nbsp;&nbsp;"pg": [{<br>&nbsp;&nbsp;&nbsp;&nbsp;"n":"전형명", "q":모집인원, "m":"전형방법",<br>&nbsp;&nbsp;&nbsp;&nbsp;"iv":면접비율, "mn":"수능최저", "cr":경쟁률,<br>&nbsp;&nbsp;&nbsp;&nbsp;"dept":[{"d":"학과명","q":모집인원,"cr":경쟁률}]<br>&nbsp;&nbsp;}]<br>}]
+    </code></p></div>
+
+    <div class="db-panel"><h3>🖨️ 인쇄 / PDF</h3>
+    <div class="db-actions">
+      <button class="db-btn primary" onclick="SM('A')">📚 과목→학과 모드</button>
+      <button class="db-btn primary" onclick="SM('B')">🎯 학과→과목 모드</button>
+    </div></div></div>`;
+}
+
+function rUP(univs, matchedMajors){
+  const mj=selMaj?MAJORS.find(x=>x.id===selMaj):null;
+  const isModeB=mode==='B'&&mj;
+  const mjKw=mj?mj.keywords:[];
+  
+  // 모드A: 매칭된 학과들의 키워드 수집
+  const isModeA=mode==='A'&&matchedMajors&&matchedMajors.length>0;
+  const allMajorKw=isModeA?[...new Set(matchedMajors.flatMap(m=>m.keywords))]:[];
+  const allMajorNames=isModeA?matchedMajors.map(m=>m.name):[];
+  
+  // 안내문
+  let contextNote='';
+  if(isModeB){
+    const hasDept=univs.some(u=>u.mp.some(p=>p.dept&&p.dept.length>0));
+    if(hasDept){
+      contextNote=`<div style="font-size:.72rem;color:var(--green);padding:8px 12px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);border-radius:8px;margin-bottom:10px">✅ <b>●</b> 표시가 있는 학과는 학과별 모집인원·경쟁률 데이터가 제공됩니다. 나머지는 전형 전체 기준이며, 학과별 상세는 각 대학 모집요강을 참조하세요.</div>`;
+    } else {
+      contextNote=`<div style="font-size:.72rem;color:var(--amber);padding:8px 12px;background:rgba(251,191,36,.06);border:1px solid rgba(251,191,36,.15);border-radius:8px;margin-bottom:10px">⚠️ 아래 모집인원·경쟁률은 <b>전형 전체</b> 기준입니다. 학과별 세부 데이터는 각 대학 모집요강에서 확인하세요.</div>`;
+    }
+  } else if(isModeA){
+    contextNote=`<div style="font-size:.72rem;color:var(--green);padding:8px 12px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);border-radius:8px;margin-bottom:10px">✅ 매칭된 학과(${allMajorNames.slice(0,5).join(', ')}${allMajorNames.length>5?' 등':''})의 학과별 모집인원·경쟁률이 <b>●</b>로 표시됩니다. 학과 카드를 클릭하면 해당 학과 상세 전략을 확인할 수 있습니다.</div>`;
+  }
+  
+  // 합격 가능성 그룹 카운트
+  let grpCount={safe:0,fit:0,challenge:0,reach:0,nodata:0};
+  if(myGrade>0){
+    univs.forEach(u=>{
+      const best=u.mp.reduce((b,p)=>{if(!p.grades)return b;const g=p.grades['인문']||p.grades['자연'];return g?Math.min(b,g.avg):b},99);
+      if(best>=99){grpCount.nodata++}
+      else{const diff=best-myGrade;if(diff>=1.0)grpCount.safe++;else if(diff>=0.3)grpCount.fit++;else if(diff>=-0.3)grpCount.challenge++;else grpCount.reach++}
+    });
+    const total=grpCount.safe+grpCount.fit+grpCount.challenge+grpCount.reach;
+    if(total>0){
+      contextNote+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        ${grpCount.safe?'<div style="flex:1;min-width:80px;text-align:center;padding:8px;border-radius:8px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2)"><div style="font-size:1.1rem;font-weight:800;color:var(--green)">'+grpCount.safe+'</div><div style="font-size:.65rem;color:var(--green)">✅ 안정</div></div>':''}
+        ${grpCount.fit?'<div style="flex:1;min-width:80px;text-align:center;padding:8px;border-radius:8px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2)"><div style="font-size:1.1rem;font-weight:800;color:var(--amber)">'+grpCount.fit+'</div><div style="font-size:.65rem;color:var(--amber)">🔶 적정</div></div>':''}
+        ${grpCount.challenge?'<div style="flex:1;min-width:80px;text-align:center;padding:8px;border-radius:8px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2)"><div style="font-size:1.1rem;font-weight:800;color:var(--red)">'+grpCount.challenge+'</div><div style="font-size:.65rem;color:var(--red)">🔺 도전</div></div>':''}
+        ${grpCount.reach?'<div style="flex:1;min-width:80px;text-align:center;padding:8px;border-radius:8px;background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.2)"><div style="font-size:1.1rem;font-weight:800;color:var(--text3)">'+grpCount.reach+'</div><div style="font-size:.65rem;color:var(--text3)">⬆ 상향</div></div>':''}
+      </div>`;
+    }
+  }
+  return contextNote+univs.map(u=>{
+    const io=openP.has(u.nm);
+    
+    // 학과 키워드로 dept 매칭 찾기 (모드A: 전체 매칭학과, 모드B: 선택학과)
+    const activeKw=isModeB?mjKw:isModeA?allMajorKw:[];
+    let deptMatches=[];
+    if(activeKw.length>0){
+      u.mp.forEach(p=>{
+        if(p.dept){
+          p.dept.forEach(d=>{
+            if(activeKw.some(k=>d.d.toLowerCase().includes(k.toLowerCase()))){
+              // 어떤 학과와 매칭되는지 찾기
+              const matchedName=isModeB?mj.name:
+                (matchedMajors||[]).find(mm=>mm.keywords.some(k=>d.d.toLowerCase().includes(k.toLowerCase())))?.name||d.d;
+              deptMatches.push({prog:p.n,dept:d.d,q:d.q,cr:d.cr,majorName:matchedName});
+            }
+          });
+        }
+      });
+    }
+    
+    // 헤더 배지
+    const deptQuota=deptMatches.reduce((s,d)=>s+d.q,0);
+    const headerBadge=deptMatches.length>0
+      ?`<span class="pbadge c">${deptMatches.length}개 학과 ${deptQuota}명</span>`
+      :`<span class="pbadge c">${u.mp.length}개 전형</span>`;
+    
+    // 테이블 렌더링
+    let tableRows='';
+    if(deptMatches.length>0){
+      // 학과별 데이터 테이블
+      const label=isModeB?mj.name:'매칭 학과';
+      tableRows=`<div style="font-size:.7rem;color:var(--accent);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:4px">● ${label} 학과별 모집 정보</div>`;
+      tableRows+=`<table class="utbl"><thead><tr><th>전형명 / 학과</th><th>학과 모집인원</th><th>전형방법</th><th>면접</th><th>수능최저</th><th>학과 경쟁률</th></tr></thead><tbody>`;
+      deptMatches.forEach(dm=>{
+        const p=u.mp.find(x=>x.n===dm.prog);
+        tableRows+=`<tr style="background:rgba(56,189,248,.04)"><td class="uname">${dm.prog}<br><span style="font-size:.65rem;color:var(--accent)">→ ${dm.dept}</span></td><td style="font-weight:700;color:var(--accent)">${dm.q}명</td><td style="max-width:170px;font-size:.7rem">${p?p.m:''}</td><td>${p&&p.iv?`<span class="tag tag-iv">면접${typeof p.iv==='number'?' '+p.iv+'%':''}</span>`:'<span class="tag tag-no">X</span>'}</td><td>${p&&p.mn?`<span class="tag tag-mn">O</span><span style="font-size:.55rem;color:var(--text3);margin-left:2px">${(p.mn||'').substring(0,35)}${(p.mn||'').length>35?'…':''}</span>`:'<span class="tag tag-no">X</span>'}</td><td style="font-weight:700;color:var(--accent)">${dm.cr?dm.cr+':1':'-'}</td></tr>`;
+      });
+      // 나머지 전형
+      const shownProgs=new Set(deptMatches.map(dm=>dm.prog));
+      const otherProgs=u.mp.filter(p=>!shownProgs.has(p.n));
+      if(otherProgs.length>0){
+        tableRows+=`<tr><td colspan="6" style="font-size:.68rem;color:var(--text3);padding:8px;text-align:center;cursor:pointer" onclick="this.parentNode.querySelectorAll('.other-row').forEach(r=>r.style.display=r.style.display==='none'?'table-row':'none');this.textContent=this.textContent.includes('▼')?'기타 전형 접기 ▲':'기타 ${otherProgs.length}개 전형 보기 ▼'">기타 ${otherProgs.length}개 전형 보기 ▼</td></tr>`;
+        otherProgs.forEach(p=>{
+          tableRows+=`<tr class="other-row" style="display:none"><td class="uname">${p.n}</td><td>${p.q.toLocaleString()}명 <span style="font-size:.5rem;color:var(--text3)">(전형전체)</span></td><td style="max-width:170px;font-size:.7rem">${p.m}</td><td>${p.iv?`<span class="tag tag-iv">면접${typeof p.iv==='number'?' '+p.iv+'%':''}</span>`:'<span class="tag tag-no">X</span>'}</td><td>${p.mn?`<span class="tag tag-mn">O</span>`:'<span class="tag tag-no">X</span>'}</td><td>${p.cr?p.cr+':1':'-'}</td></tr>`;
+        });
+      }
+      tableRows+=`</tbody></table>`;
+    } else {
+      // 기본 테이블 (전형 전체)
+      tableRows=`<table class="utbl"><thead><tr><th>전형명</th><th>모집인원</th><th>전형방법</th><th>면접</th><th>수능최저</th><th>경쟁률</th></tr></thead><tbody>`;
+      u.mp.forEach(p=>{
+        const hasKw=activeKw.length>0&&activeKw.some(k=>((p.mn||'')+(p.n||'')).toLowerCase().includes(k.toLowerCase()));
+        const rs=hasKw?'background:rgba(56,189,248,.04)':'';
+        tableRows+=`<tr style="${rs}"><td class="uname">${p.n}</td><td>${p.q.toLocaleString()}명 <span style="font-size:.5rem;color:var(--text3)">(전형전체)</span></td><td style="max-width:170px;font-size:.7rem">${p.m}</td><td>${p.iv?`<span class="tag tag-iv">면접${typeof p.iv==='number'?' '+p.iv+'%':''}</span>`:'<span class="tag tag-no">X</span>'}</td><td>${p.mn?`<span class="tag tag-mn">O</span>`:'<span class="tag tag-no">X</span>'}</td><td>${p.cr?p.cr+':1':'-'}</td></tr>`;
+      });
+      tableRows+=`</tbody></table>`;
+    }
+    
+    return`<div class="panel"><div class="panel-hd" onclick="TP('${u.nm}')"><div style="display:flex;align-items:center;gap:7px"><span class="panel-tl">${u.nm}</span><span class="pbadge f">${u.rg}·${u.lc}</span></div><div style="display:flex;gap:5px;align-items:center">${headerBadge}${(()=>{
+      if(!myGrade) return '';
+      const bestGrade=u.mp.reduce((best,p)=>{
+        if(!p.grades) return best;
+        const g=p.grades['인문']||p.grades['자연'];
+        return g?Math.min(best,g.avg):best;
+      },99);
+      if(bestGrade>=99) return '';
+      const diff=bestGrade-myGrade;
+      if(diff>=1.0) return '<span class="pbadge" style="background:rgba(52,211,153,.15);color:var(--green)">✅ 안정</span>';
+      if(diff>=0.3) return '<span class="pbadge" style="background:rgba(251,191,36,.15);color:var(--amber)">🔶 적정</span>';
+      if(diff>=-0.3) return '<span class="pbadge" style="background:rgba(248,113,113,.15);color:var(--red)">🔺 도전</span>';
+      return '<span class="pbadge" style="background:rgba(248,113,113,.1);color:var(--text3)">⬆ 상향</span>';
+    })()}<span class="parrow ${io?'open':''}">▼</span></div></div><div class="panel-bd ${io?'open':''}">${tableRows}</div></div>`;
+  }).join('');
+}
+
+
+// Events
+window.setMyGrade=function(g){myGrade=parseFloat(g)||0;render()};
+window.SM=function(m){mode=m;selSub.clear();selMaj=null;openP.clear();sTxt='';regF='전체';if(m!=='E')simSub.clear();if(m==='F'){profileMode=profileUser?'view':'login'}render()};
+window.TS=function(s){selSub.has(s)?selSub.delete(s):selSub.add(s);render()};
+window.SMJ=function(id){selMaj=selMaj===id?null:id;openP.clear();render()};
+window.GoB=function(id){mode='B';selMaj=id;sTxt='';openP.clear();render();window.scrollTo({top:0,behavior:'smooth'})};
+window.SR=function(r){regF=r;render()};
+window.TP=function(n){openP.has(n)?openP.delete(n):openP.add(n);render()};
+window.US=function(v){sTxt=v;selMaj=null;render();const inp=document.getElementById('mjSearch');if(inp){inp.focus();inp.setSelectionRange(v.length,v.length)}};
+let _searchTimer=null;
+let _isComposing=false;
+document.addEventListener('compositionstart',()=>{_isComposing=true});
+document.addEventListener('compositionend',(e)=>{_isComposing=false;if(e.target.id==='mjSearch')US(e.target.value)});
+window.debouncedSearch=function(v){if(_isComposing)return;clearTimeout(_searchTimer);_searchTimer=setTimeout(()=>US(v),150)};
+
+
+// D: 내신 로드맵 이벤트
+window.addUserSubject=function(sem){
+  const inp=document.getElementById('addSubj_'+sem);
+  if(!inp)return;
+  const name=inp.value.trim();
+  if(!name){alert('과목명을 입력하세요');return}
+  if(!userSubjects[sem])userSubjects[sem]=[];
+  if(userSubjects[sem].includes(name)){alert('이미 추가된 과목입니다');return}
+  userSubjects[sem].push(name);
+  saveUserSubjects();render();
+};
+window.removeUserSubject=function(subj,semsStr){
+  if(!confirm(subj+' 과목을 삭제할까요?'))return;
+  const sems=semsStr.split(',');
+  sems.forEach(sem=>{
+    if(userSubjects[sem]){
+      userSubjects[sem]=userSubjects[sem].filter(s=>s!==subj);
+      // 관련 성적 데이터도 삭제
+      delete roadmapData[sem+'_'+subj];
+    }
+  });
+  saveUserSubjects();
+  localStorage.setItem('roadmap',JSON.stringify(roadmapData));
+  render();
+};
+window.setRoadmap=function(key,val){
+  val=parseFloat(val);
+  if(val>=1&&val<=9){roadmapData[key]=val}else{delete roadmapData[key]}
+  localStorage.setItem('roadmap',JSON.stringify(roadmapData));
+  render();
+};
+window.exportRoadmap=function(){
+  const blob=new Blob([JSON.stringify(roadmapData,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='roadmap_'+new Date().toISOString().split('T')[0]+'.json';a.click();
+};
+window.importRoadmap=function(e){
+  const f=e.target.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=function(ev){
+    try{roadmapData=JSON.parse(ev.target.result);localStorage.setItem('roadmap',JSON.stringify(roadmapData));render();alert('로드맵 데이터를 불러왔습니다.')}
+    catch(err){alert('파일 형식 오류')}
+  };reader.readAsText(f);
+};
+
+// E: 시뮬레이터 이벤트
+window.toggleSim=function(s){simSub.has(s)?simSub.delete(s):simSub.add(s);render()};
+
+// F: 학생 프로필 이벤트 (로그인 기반)
+window.doRegister=function(){
+  const id=document.getElementById('reg_id').value.trim();
+  const pw=document.getElementById('reg_pw').value;
+  const pw2=document.getElementById('reg_pw2').value;
+  const name=document.getElementById('reg_name').value.trim();
+  if(!id){alert('학번을 입력하세요');return}
+  if(pw.length<4){alert('비밀번호는 4자리 이상이어야 합니다');return}
+  if(pw!==pw2){alert('비밀번호가 일치하지 않습니다');return}
+  if(!name){alert('이름을 입력하세요');return}
+  if(loadProfile(id)){alert('이미 등록된 학번입니다. 로그인해주세요.');profileMode='login';render();return}
+  const data={name:name,grade:'',major:'',target:'',activities:'',memo:'',pwHash:simpleHash(pw),created:new Date().toISOString().split('T')[0],gradeHistory:[],majorHistory:[],journal:[]};
+  saveProfile(id,data);
+  profileUser=id;profileData=data;profileMode='view';render();
+  alert('프로필이 생성되었습니다! 🎉');
+};
+window.doLogin=function(){
+  const id=document.getElementById('login_id').value.trim();
+  const pw=document.getElementById('login_pw').value;
+  if(!id||!pw){alert('학번과 비밀번호를 입력하세요');return}
+  const data=loadProfile(id);
+  if(!data){alert('등록되지 않은 학번입니다.\n"처음이에요" 버튼으로 가입해주세요.');return}
+  if(data.pwHash!==simpleHash(pw)){alert('비밀번호가 틀립니다');return}
+  profileUser=id;profileData=data;profileMode='view';render();
+};
+window.doSaveProfile=function(){
+  const now=new Date().toISOString().split('T')[0];
+  const newName=document.getElementById('ed_name').value.trim();
+  const newGrade=parseFloat(document.getElementById('ed_grade').value)||'';
+  const newMajor=document.getElementById('ed_major').value.trim();
+  const newTarget=document.getElementById('ed_target').value.trim();
+  const newAct=document.getElementById('ed_activities').value.trim();
+  const newMemo=document.getElementById('ed_memo').value.trim();
+  // 이력 배열 초기화 (기존 프로필에 없을 수 있음)
+  if(!profileData.gradeHistory)profileData.gradeHistory=[];
+  if(!profileData.majorHistory)profileData.majorHistory=[];
+  if(!profileData.journal)profileData.journal=[];
+  // 성적 변화 기록
+  if(newGrade&&newGrade!==profileData.grade){
+    profileData.gradeHistory.push({date:now,grade:newGrade,prev:profileData.grade||'없음'});
+  }
+  // 희망학과 변경 기록
+  if(newMajor&&newMajor!==profileData.major){
+    profileData.majorHistory.push({date:now,major:newMajor,prev:profileData.major||'없음'});
+  }
+  profileData.name=newName;profileData.grade=newGrade;profileData.major=newMajor;
+  profileData.target=newTarget;profileData.activities=newAct;profileData.memo=newMemo;
+  saveProfile(profileUser,profileData);
+  profileMode='view';render();
+};
+window.doExportMyProfile=function(){
+  const blob=new Blob([JSON.stringify({id:profileUser,...profileData},null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='my_profile_'+profileUser+'.json';a.click();
+};
+window.addGradeRecord=function(){
+  const exam=document.getElementById('gr_exam').value;
+  const grade=parseFloat(document.getElementById('gr_grade').value);
+  if(!grade||grade<1||grade>9){alert('등급을 1~9 사이로 입력하세요');return}
+  if(!profileData.gradeHistory)profileData.gradeHistory=[];
+  const now=new Date().toISOString().split('T')[0];
+  profileData.gradeHistory.push({date:now,exam:exam,grade:grade,prev:profileData.grade||'없음'});
+  profileData.grade=grade;
+  saveProfile(profileUser,profileData);render();
+};
+window.deleteGradeRecord=function(idx){
+  if(!confirm('이 기록을 삭제할까요?'))return;
+  profileData.gradeHistory.splice(idx,1);
+  saveProfile(profileUser,profileData);render();
+};
+window.addJournal=function(){
+  const type=document.getElementById('jn_type').value;
+  const content=document.getElementById('jn_content').value.trim();
+  if(!content){alert('내용을 입력하세요');return}
+  if(!profileData.journal)profileData.journal=[];
+  profileData.journal.push({date:new Date().toISOString().split('T')[0],type:type,content:content});
+  saveProfile(profileUser,profileData);render();
+};
+window.deleteJournal=function(idx){
+  if(!confirm('이 일지를 삭제할까요?'))return;
+  profileData.journal.splice(idx,1);
+  saveProfile(profileUser,profileData);render();
+};
+
+// 집단지성 기여
+window.submitContribution=function(){
+  const univ=document.getElementById('ct_univ').value.trim();
+  const pg=document.getElementById('ct_pg').value.trim();
+  if(!univ||!pg){alert('대학명과 전형명은 필수입니다');return}
+  
+  const data={
+    nm:univ,
+    rg:document.getElementById('ct_region').value,
+    pg_name:pg,
+    pg_quota:parseInt(document.getElementById('ct_quota').value)||0,
+    pg_method:document.getElementById('ct_method').value.trim(),
+    pg_interview:document.getElementById('ct_iv').value||null,
+    pg_min:document.getElementById('ct_min').value.trim(),
+    contributor:document.getElementById('ct_name').value.trim()||'익명',
+    source_url:document.getElementById('ct_source').value.trim()
+  };
+  
+  const resultDiv=document.getElementById('contribResult');
+  resultDiv.innerHTML='<div style="font-size:.78rem;color:var(--accent)">전송 중...</div>';
+  
+  fetch('/api/db/contribute/',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  }).then(r=>r.json()).then(res=>{
+    if(res.ok){
+      resultDiv.innerHTML='<div style="padding:10px;border-radius:8px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);font-size:.8rem;color:var(--green)">✅ '+res.message+'<br><span style="font-size:.7rem;color:var(--text3)">전체 '+res.total_univs+'개 대학, '+res.total_pgs+'개 전형</span></div>';
+      // DB 새로고침
+      fetch('/api/db/').then(r=>r.json()).then(d=>{if(d.length>0){UNIV_DB=d;dbMeta.count=d.length}});
+      // 입력 필드 초기화 (대학명, 기여자는 유지)
+      ['ct_pg','ct_quota','ct_method','ct_iv','ct_min','ct_source'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+      dbLog.push('['+new Date().toISOString().split('T')[0]+'] 🤝 '+data.contributor+': '+univ+' - '+pg+' 기여');
+    } else {
+      resultDiv.innerHTML='<div style="padding:10px;border-radius:8px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);font-size:.8rem;color:var(--red)">❌ '+res.error+'</div>';
+    }
+  }).catch(err=>{
+    resultDiv.innerHTML='<div style="padding:10px;border-radius:8px;background:rgba(248,113,113,.1);font-size:.8rem;color:var(--red)">❌ 네트워크 오류: '+err.message+'</div>';
+  });
+};
+
+window.loadContribLog=function(){
+  const logDiv=document.getElementById('contribLog');
+  logDiv.innerHTML='<div style="font-size:.78rem;color:var(--accent)">불러오는 중...</div>';
+  fetch('/api/db/contribute/').then(r=>r.json()).then(log=>{
+    if(!log.length){logDiv.innerHTML='<div style="font-size:.78rem;color:var(--text3)">아직 기여 내역이 없습니다</div>';return}
+    logDiv.innerHTML='<div style="font-size:.82rem;font-weight:700;margin-bottom:8px">📋 최근 기여 내역 ('+log.length+'건)</div>'+
+      log.slice().reverse().slice(0,20).map(l=>'<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:.75rem"><span style="color:var(--text3);min-width:90px">'+l.date+'</span><span style="color:var(--accent);font-weight:600;min-width:50px">'+l.contributor+'</span><span style="color:var(--text2)">'+l.univ+' - '+l.pg+'</span><span class="profile-badge" style="background:rgba(52,211,153,.1);color:var(--green);margin-left:auto">'+(l.action==='new_univ'?'🆕 신규':l.action==='added'?'➕ 추가':'✏️ 수정')+'</span></div>').join('');
+  }).catch(err=>{
+    logDiv.innerHTML='<div style="font-size:.78rem;color:var(--red)">불러오기 실패</div>';
+  });
+};
+
+// DB Management
+window.handleDragOver=function(e){e.preventDefault();document.getElementById('dropZone').classList.add('dragover')};
+window.handleDragLeave=function(e){document.getElementById('dropZone').classList.remove('dragover')};
+window.handleDrop=function(e){e.preventDefault();document.getElementById('dropZone').classList.remove('dragover');const f=e.dataTransfer.files[0];if(f){window._pendingFile=f;loadJSON(f)}};
+window.handleFileSelect=function(e){const f=e.target.files[0];if(f){window._pendingFile=f;loadJSON(f)}};
+
+function loadJSON(file){
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!Array.isArray(data))throw new Error('JSON이 배열이 아닙니다');
+      if(!data[0]||!data[0].nm||!data[0].pg)throw new Error('올바른 DB 형식이 아닙니다 (nm, pg 필드 필요)');
+      UNIV_DB=data;
+      const now=new Date().toISOString().split('T')[0];
+      dbMeta={version:file.name.replace('.json',''),date:now,source:file.name,count:data.length};
+      // 서버에 저장
+      fetch('/api/db/update/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+        .then(r=>r.json()).then(r=>dbLog.push('['+now+'] 서버 저장: '+r.message))
+        .catch(e=>dbLog.push('['+now+'] 서버 저장 실패: '+e.message));
+      const pc=data.reduce((s,u)=>s+u.pg.length,0);
+      dbLog.push(`[${now}] ✅ DB 업데이트 완료: ${data.length}개 대학, ${pc}개 전형 (${file.name})`);
+      render();
+    }catch(err){
+      dbLog.push(`[${new Date().toISOString().split('T')[0]}] ❌ 오류: ${err.message}`);
+      render();
+    }
+  };
+  reader.readAsText(file);
+}
+
+window.exportDB=function(){
+  const a=document.createElement('a');a.href='/api/db/export/';a.download='hakjong_db.json';document.body.appendChild(a);a.click();document.body.removeChild(a);
+  dbLog.push('['+new Date().toISOString().split('T')[0]+'] 📤 DB 내보내기 완료');
+  render();
+};
+
+window._pendingFile=null;
+window.mergeUpload=function(){
+  if(!window._pendingFile){
+    alert('먼저 위 업로드 영역에서 JSON 파일을 선택하세요.\n파일 선택 후 "병합 업로드" 버튼을 다시 눌러주세요.');
+    document.getElementById('fileInput').click();
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!Array.isArray(data)) throw new Error('JSON이 배열이 아닙니다');
+      let added=0,updated=0;
+      data.forEach(newU=>{
+        const idx=UNIV_DB.findIndex(u=>u.nm===newU.nm);
+        if(idx>=0){
+          UNIV_DB[idx]=newU;
+          updated++;
+        } else {
+          UNIV_DB.push(newU);
+          added++;
+        }
+      });
+      const now=new Date().toISOString().split('T')[0];
+      dbMeta.date=now;
+      dbMeta.version=`병합_${now}`;
+      // 서버에 병합 저장
+      fetch('/api/db/merge/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)})
+        .then(r=>r.json()).then(r=>dbLog.push('['+now+'] 서버 병합: '+r.message))
+        .catch(e=>dbLog.push('['+now+'] 서버 병합 실패'));
+      dbLog.push(`[${now}] 🔀 병합 완료: ${added}개 추가, ${updated}개 갱신 (${window._pendingFile.name})`);
+      window._pendingFile=null;
+      render();
+    }catch(err){
+      dbLog.push(`[${new Date().toISOString().split('T')[0]}] ❌ 병합 오류: ${err.message}`);
+      render();
+    }
+  };
+  reader.readAsText(window._pendingFile);
+};
+
+window.resetDB=function(){
+  if(!confirm('내장 DB(2027학년도)로 초기화합니다. 계속하시겠습니까?'))return;
+  // offline: use builtin
+  dbLog.push(`[${new Date().toISOString().split('T')[0]}] 🔄 내장 DB로 초기화 완료`);
+  render();
+};
+
+window.exportPDF=function(){
+  // 브라우저 인쇄 → PDF 저장
+  alert('브라우저의 "인쇄" 대화상자에서\\n"대상"을 "PDF로 저장"으로 선택하세요.\\n\\n인쇄 미리보기에서 깔끔하게 출력됩니다.');
+  window.print();
+};
+
+// API에서 DB 로드
+async function loadDB(){ render(); return; // offline
+  try{
+    const res=await fetch('/api/db/');
+    if(res.ok){
+      const data=await res.json();
+      if(data.length>0){
+        UNIV_DB=data;
+        dbMeta.version='서버DB';
+        dbMeta.count=data.length;
+      }
+    }
+  }catch(e){console.log('API load failed, using builtin')}
+  render();
+}
+loadDB();
+</script>
+</body>
+</html>
