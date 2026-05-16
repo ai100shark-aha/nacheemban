@@ -177,7 +177,14 @@ body{font-family:'Pretendard Variable','Noto Sans KR',sans-serif;background:var(
 .empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
 .empty-state .icon{font-size:2.5rem;margin-bottom:12px}
 .two-col{display:grid;grid-template-columns:280px 1fr;gap:16px}
-@media(max-width:768px){.two-col{grid-template-columns:1fr}.roadmap-grid{grid-template-columns:repeat(3,1fr)}.tabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%}.tab{font-size:.68rem;padding:8px 6px}}
+@media(max-width:768px){
+.two-col{grid-template-columns:1fr}
+.roadmap-grid{grid-template-columns:repeat(3,1fr)}
+.tabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:var(--card2);border:1px solid var(--accent);box-shadow:0 0 12px rgba(56,189,248,.1);position:relative}
+.tabs::-webkit-scrollbar{display:none}
+.tabs::after{content:'';position:sticky;right:0;top:0;bottom:0;width:30px;background:linear-gradient(90deg,transparent,var(--card2));pointer-events:none;flex-shrink:0}
+.tab{font-size:.68rem;padding:8px 8px;min-width:max-content}
+}
 </style>
 </head>
 <body>
@@ -358,8 +365,9 @@ function render(){
       <button class="tab ${mode==='B'?'active':''}" onclick="SM('B')">🎯 학과 → 과목·전략</button>
       <button class="tab ${mode==='E'?'active':''}" onclick="SM('E')">🔬 과목 시뮬레이터</button>
       <button class="tab ${mode==='C'?'active':''}" onclick="SM('C')">⚙️ DB 관리</button>
+      <button class="tab ${mode==='G'?'active':''}" onclick="SM('G')">❓ 도움말</button>
     </div>
-    ${mode==='A'?renderA():mode==='B'?renderB():mode==='C'?renderC():mode==='D'?renderD():mode==='E'?renderE():renderF()}
+    ${mode==='A'?renderA():mode==='B'?renderB():mode==='C'?renderC():mode==='D'?renderD():mode==='E'?renderE():mode==='F'?renderF():renderG()}
     <div class="footer">입시 나침반 v5.3.1 (웹 서비스) — 2027학년도 학종 가이드북 기반 · 제주여고 정보교과<br>※ 실제 지원 시 반드시 해당 대학 모집요강을 직접 확인하세요</div>`;
 }
 
@@ -818,6 +826,73 @@ function renderF(){
   `+footerHtml;
 }
 
+
+function renderG(){
+  const faqs=[
+    {cat:'시작하기',icon:'🚀',items:[
+      {q:'입시 나침반은 어떤 앱인가요?',a:'2022 개정 교육과정 기반으로, 내가 선택한 과목이 어떤 학과·대학과 연결되는지 양방향으로 탐색할 수 있는 진로진학 도구입니다. 100개 대학의 학생부종합전형 데이터가 내장되어 있습니다.'},
+      {q:'회원가입이 필요한가요?',a:'"내 프로필" 탭에서 학번과 비밀번호를 설정하면 됩니다. 모든 데이터는 브라우저에만 저장되며 서버로 전송되지 않으므로 안심하세요.'},
+      {q:'모바일에서도 사용할 수 있나요?',a:'네! 반응형 디자인이라 스마트폰에서도 잘 작동합니다. 탭은 좌우로 스와이프하세요.'},
+    ]},
+    {cat:'🔐 내 프로필',icon:'👩‍🎓',items:[
+      {q:'비밀번호를 잊으면 어떻게 하나요?',a:'현재는 비밀번호 찾기 기능이 없습니다. 브라우저 개발자도구(F12) → Application → Local Storage에서 profile_학번 데이터를 삭제하고 다시 가입할 수 있습니다.'},
+      {q:'다른 사람이 내 프로필을 볼 수 있나요?',a:'같은 브라우저·같은 기기에서 학번+비밀번호를 알아야만 접근 가능합니다. 로그아웃하면 다른 사람이 볼 수 없습니다.'},
+      {q:'성적 추이는 어떻게 기록하나요?',a:'로그인 후 "📊 성적 추이" 서브탭에서 시험 구분(중간/기말/모의고사)을 선택하고 등급을 입력하면 됩니다. 기록이 쌓이면 그래프가 자동으로 그려집니다.'},
+      {q:'상담일지는 누가 쓰나요?',a:'학생 본인이 자유롭게 씁니다. 진로 상담 후 느낀 점, 목표 변경 이유, 활동 기록 등을 날짜별로 쌓아가세요.'},
+    ]},
+    {cat:'📈 내신 로드맵',icon:'📊',items:[
+      {q:'1학년 과목이 이미 정해져 있는데요?',a:'1학년은 제주여고 공통과목이 자동으로 설정되어 있습니다. 공통국어1, 공통수학1 등 학기별로 다른 과목이 표시됩니다.'},
+      {q:'2~3학년 과목은 어떻게 추가하나요?',a:'2학년/3학년 섹션 아래에 과목명을 입력하고 + 버튼을 누르세요. 학기별로 다른 과목도 추가 가능합니다.'},
+      {q:'등급을 수정하면 어떻게 되나요?',a:'그 자리에서 바로 수정됩니다. 평균도 자동으로 재계산되고, 그래프도 업데이트됩니다.'},
+    ]},
+    {cat:'📚 과목 → 학과',icon:'🔍',items:[
+      {q:'과목을 선택하면 뭐가 나오나요?',a:'선택한 과목과 관련된 학과가 매칭률(%)과 함께 나타납니다. 학과를 클릭하면 해당 학과로 지원 가능한 100개 대학이 표시됩니다.'},
+      {q:'내 등급으로 필터링은 어떻게 하나요?',a:'내 프로필에 등급을 입력해두면 자동으로 연동됩니다. 또는 슬라이더로 직접 설정할 수도 있습니다. 대학 옆에 ✅안정, 🔶적정, 🔺도전, ⬆상향 뱃지가 표시됩니다.'},
+      {q:'안정/적정/도전/상향은 무슨 뜻인가요?',a:'합격자 평균등급 대비 내 등급의 차이입니다.<br>✅ <b>안정</b>: 합격자 평균보다 1등급 이상 여유<br>🔶 <b>적정</b>: 0.3~1등급 여유<br>🔺 <b>도전</b>: 합격선 근처 (±0.3)<br>⬆ <b>상향</b>: 합격자 평균보다 등급이 낮음'},
+    ]},
+    {cat:'🎯 학과 → 과목·전략',icon:'🎯',items:[
+      {q:'학과를 선택하면 뭐가 나오나요?',a:'해당 학과에 필요한 권장 선택과목, 입시 전략 조언, 그리고 지원 가능한 대학 목록이 나옵니다.'},
+      {q:'공식 권장과목이 뭔가요?',a:'서울대·연세대·고려대·성균관대·한양대 5개 대학이 공동으로 발표한 14개 학문분야별 권장 선택과목입니다. 핵심과목과 권장과목으로 나뉩니다.'},
+    ]},
+    {cat:'🔬 과목 시뮬레이터',icon:'🧪',items:[
+      {q:'"과목→학과"와 뭐가 다른가요?',a:'과목 시뮬레이터는 아직 이수하지 않은 과목을 "미리 시뮬레이션"하는 데 초점이 맞춰져 있습니다. 2학년 선택과목 조합을 이것저것 바꿔보면서 어떤 학과·대학이 열리는지 탐색할 수 있습니다.'},
+      {q:'핵심과목 이수율이 뭔가요?',a:'5개 대학 공동연구에서 정한 핵심과목 중 내가 이수할 과목의 비율입니다. 100%면 해당 분야 지원에 최적의 과목 조합입니다.'},
+    ]},
+    {cat:'🤝 집단지성 DB',icon:'📤',items:[
+      {q:'기여하기는 어떻게 하나요?',a:'DB 관리 탭에서 대학명·전형명·모집인원·전형방법 등을 입력하고 "기여하기" 버튼을 누르면 됩니다. 같은 대학을 입력하면 기존 데이터에 전형이 추가됩니다.'},
+      {q:'잘못된 정보를 입력하면 어떻게 되나요?',a:'같은 대학·같은 전형명으로 다시 입력하면 정보가 업데이트됩니다. 기여 내역에서 누가 언제 무엇을 입력했는지 확인할 수 있습니다.'},
+      {q:'어디서 전형 정보를 찾나요?',a:'각 대학 입학처 홈페이지의 모집요강, 대입정보포털(adiga.kr), 또는 학종 가이드북을 참고하세요. 출처 URL도 함께 입력하면 더 좋습니다.'},
+    ]},
+    {cat:'주의사항',icon:'⚠️',items:[
+      {q:'이 앱의 정보는 정확한가요?',a:'2027학년도 학생부종합전형 가이드북(한눈에보는전형 시리즈)을 기반으로 하되, 학생 기여 데이터도 포함되어 있습니다. <b>실제 지원 시 반드시 해당 대학 모집요강을 직접 확인</b>하세요.'},
+      {q:'데이터가 날아가면 어떡하나요?',a:'프로필·내신 로드맵 데이터는 브라우저 localStorage에 저장됩니다. 브라우저 데이터 삭제 시 사라질 수 있으니, "내보내기" 기능으로 주기적으로 백업하세요.'},
+    ]},
+  ];
+
+  return `
+    <div style="max-width:800px;margin:0 auto">
+      <div class="step"><div class="step-title"><div class="step-num">?</div><span class="step-label">입시 나침반 사용 가이드</span></div>
+      <p style="font-size:.78rem;color:var(--text2);margin-bottom:16px">궁금한 항목을 클릭하면 답변이 펼쳐집니다. 탭별로 분류되어 있어요.</p>
+      ${faqs.map(cat=>`
+        <div style="margin-bottom:16px">
+          <div style="font-size:.88rem;font-weight:700;color:var(--accent);margin-bottom:8px;display:flex;align-items:center;gap:6px">${cat.icon} ${cat.cat}</div>
+          ${cat.items.map((f,i)=>`
+            <details style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;overflow:hidden">
+              <summary style="padding:12px 16px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--text);list-style:none;display:flex;align-items:center;gap:8px">
+                <span style="color:var(--accent);font-size:.75rem;flex-shrink:0">Q</span>${f.q}
+              </summary>
+              <div style="padding:0 16px 14px 40px;font-size:.78rem;color:var(--text2);line-height:1.7">${f.a}</div>
+            </details>
+          `).join('')}
+        </div>
+      `).join('')}
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-top:12px;text-align:center">
+        <div style="font-size:.85rem;font-weight:700;margin-bottom:6px">더 궁금한 점이 있나요?</div>
+        <div style="font-size:.75rem;color:var(--text2)">담임 선생님에게 문의하거나, DB 관리 탭의 기여 내역에서 다른 학생들의 활동을 참고해보세요.</div>
+      </div>
+    </div>`;
+}
 
 function renderC(){
   const univCount=UNIV_DB.length, progCount=UNIV_DB.reduce((s,u)=>s+u.pg.length,0), quotaTotal=UNIV_DB.reduce((s,u)=>s+u.pg.reduce((ss,p)=>ss+p.q,0),0);
