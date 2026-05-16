@@ -350,7 +350,7 @@ function filterMaj(){if(!sTxt)return MAJORS;const q=sTxt.toLowerCase();return MA
 
 function render(){
   document.getElementById('app').innerHTML=`
-    <div class="header"><h1>🧭 입시 나침반</h1><p>선택과목과 학과/대학을 양방향으로 탐색하세요</p><span class="badge">2022 개정 교육과정 · 학종 DB ${UNIV_DB.length}개 대학</span></div>
+    <div class="header"><h1>🧭 입시 나침반</h1><p>선택과목과 학과/대학을 양방향으로 탐색하세요 · 집단지성 DB</p><span class="badge">2022 개정 교육과정 · 학종 DB ${UNIV_DB.length}개 대학</span></div>
     <div class="tabs">
       <button class="tab ${mode==='F'?'active':''}" onclick="SM('F')">🔐 내 프로필</button>
       <button class="tab ${mode==='D'?'active':''}" onclick="SM('D')">📈 내신 로드맵</button>
@@ -948,6 +948,57 @@ function renderC(){
       완성도 기준: ①전형데이터 ②경쟁률 ③면접/수능최저 ④학과별 데이터 ⑤학과3개 이상 — 각 1점, 총 5점
     </div></div>
 
+    <div class="db-panel"><h3>🤝 전형 정보 기여 (집단지성 DB)</h3>
+    <p style="font-size:.78rem;color:var(--text2);margin-bottom:12px">관심 있는 대학의 전형 정보를 직접 입력하면 모두가 함께 쓰는 DB가 됩니다. 📊</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">대학명 *</div>
+        <input class="profile-input" id="ct_univ" placeholder="예: 제주대학교" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">권역</div>
+        <select class="profile-input" id="ct_region" style="margin-bottom:0">
+          <option value="">선택</option><option value="서울">서울</option><option value="경인">경인</option><option value="강원">강원</option>
+          <option value="충청">충청</option><option value="호남">호남</option><option value="대경">대경</option><option value="동남">동남</option><option value="제주">제주</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">전형명 *</div>
+        <input class="profile-input" id="ct_pg" placeholder="예: 학생부종합(활동우수형)" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">모집인원</div>
+        <input class="profile-input" id="ct_quota" type="number" placeholder="숫자만" style="margin-bottom:0">
+      </div>
+      <div style="grid-column:1/-1">
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">전형방법</div>
+        <input class="profile-input" id="ct_method" placeholder="예: 1단계)서류100%(3배수) 2단계)서류70%+면접30%" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">면접 비율(%)</div>
+        <input class="profile-input" id="ct_iv" type="number" placeholder="없으면 비워두세요" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">수능최저</div>
+        <input class="profile-input" id="ct_min" placeholder="예: 3개합7 / 없음" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">기여자 이름</div>
+        <input class="profile-input" id="ct_name" placeholder="닉네임 또는 학번" style="margin-bottom:0">
+      </div>
+      <div>
+        <div style="font-size:.68rem;color:var(--text3);margin-bottom:3px">출처 URL (선택)</div>
+        <input class="profile-input" id="ct_source" placeholder="모집요강 링크 등" style="margin-bottom:0">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="action-btn primary" onclick="submitContribution()">📤 기여하기</button>
+      <button class="action-btn secondary" onclick="loadContribLog()">📋 기여 내역 보기</button>
+    </div>
+    <div id="contribResult" style="margin-top:10px"></div>
+    <div id="contribLog" style="margin-top:10px"></div>
+    </div>
+
     <div class="db-panel"><h3>📥 DB 업데이트</h3>
     <p style="font-size:.78rem;color:var(--text2);margin-bottom:10px">새 JSON 파일을 업로드하면 DB가 교체됩니다. 기존 DB에 대학을 추가하려면 JSON에 해당 대학만 포함하여 "병합 업로드"를 사용하세요.</p>
     <div class="db-upload-area" id="dropZone" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" onclick="document.getElementById('fileInput').click()">
@@ -1221,6 +1272,59 @@ window.deleteJournal=function(idx){
   if(!confirm('이 일지를 삭제할까요?'))return;
   profileData.journal.splice(idx,1);
   saveProfile(profileUser,profileData);render();
+};
+
+// 집단지성 기여
+window.submitContribution=function(){
+  const univ=document.getElementById('ct_univ').value.trim();
+  const pg=document.getElementById('ct_pg').value.trim();
+  if(!univ||!pg){alert('대학명과 전형명은 필수입니다');return}
+  
+  const data={
+    nm:univ,
+    rg:document.getElementById('ct_region').value,
+    pg_name:pg,
+    pg_quota:parseInt(document.getElementById('ct_quota').value)||0,
+    pg_method:document.getElementById('ct_method').value.trim(),
+    pg_interview:document.getElementById('ct_iv').value||null,
+    pg_min:document.getElementById('ct_min').value.trim(),
+    contributor:document.getElementById('ct_name').value.trim()||'익명',
+    source_url:document.getElementById('ct_source').value.trim()
+  };
+  
+  const resultDiv=document.getElementById('contribResult');
+  resultDiv.innerHTML='<div style="font-size:.78rem;color:var(--accent)">전송 중...</div>';
+  
+  fetch('/api/db/contribute/',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(data)
+  }).then(r=>r.json()).then(res=>{
+    if(res.ok){
+      resultDiv.innerHTML='<div style="padding:10px;border-radius:8px;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.2);font-size:.8rem;color:var(--green)">✅ '+res.message+'<br><span style="font-size:.7rem;color:var(--text3)">전체 '+res.total_univs+'개 대학, '+res.total_pgs+'개 전형</span></div>';
+      // DB 새로고침
+      fetch('/api/db/').then(r=>r.json()).then(d=>{if(d.length>0){UNIV_DB=d;dbMeta.count=d.length}});
+      // 입력 필드 초기화 (대학명, 기여자는 유지)
+      ['ct_pg','ct_quota','ct_method','ct_iv','ct_min','ct_source'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+      dbLog.push('['+new Date().toISOString().split('T')[0]+'] 🤝 '+data.contributor+': '+univ+' - '+pg+' 기여');
+    } else {
+      resultDiv.innerHTML='<div style="padding:10px;border-radius:8px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);font-size:.8rem;color:var(--red)">❌ '+res.error+'</div>';
+    }
+  }).catch(err=>{
+    resultDiv.innerHTML='<div style="padding:10px;border-radius:8px;background:rgba(248,113,113,.1);font-size:.8rem;color:var(--red)">❌ 네트워크 오류: '+err.message+'</div>';
+  });
+};
+
+window.loadContribLog=function(){
+  const logDiv=document.getElementById('contribLog');
+  logDiv.innerHTML='<div style="font-size:.78rem;color:var(--accent)">불러오는 중...</div>';
+  fetch('/api/db/contribute/').then(r=>r.json()).then(log=>{
+    if(!log.length){logDiv.innerHTML='<div style="font-size:.78rem;color:var(--text3)">아직 기여 내역이 없습니다</div>';return}
+    logDiv.innerHTML='<div style="font-size:.82rem;font-weight:700;margin-bottom:8px">📋 최근 기여 내역 ('+log.length+'건)</div>'+
+      log.slice().reverse().slice(0,20).map(l=>'<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:.75rem"><span style="color:var(--text3);min-width:90px">'+l.date+'</span><span style="color:var(--accent);font-weight:600;min-width:50px">'+l.contributor+'</span><span style="color:var(--text2)">'+l.univ+' - '+l.pg+'</span><span class="profile-badge" style="background:rgba(52,211,153,.1);color:var(--green);margin-left:auto">'+(l.action==='new_univ'?'🆕 신규':l.action==='added'?'➕ 추가':'✏️ 수정')+'</span></div>').join('');
+  }).catch(err=>{
+    logDiv.innerHTML='<div style="font-size:.78rem;color:var(--red)">불러오기 실패</div>';
+  });
 };
 
 // DB Management

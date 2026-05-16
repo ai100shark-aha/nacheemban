@@ -7,4 +7,5 @@ urlpatterns = [
     path('api/db/update/', views.update_db, name='update_db'),
     path('api/db/merge/', views.merge_db, name='merge_db'),
     path('api/db/export/', views.export_db, name='export_db'),
+    path('api/db/contribute/', views.contribute, name='contribute'),
 ]
