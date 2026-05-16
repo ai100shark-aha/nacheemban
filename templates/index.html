@@ -11,14 +11,14 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Pretendard Variable','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
 .app{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
-.header{text-align:center;padding:28px 0 16px}
+.header{text-align:center;padding:28px 0 16px;background:var(--bg)}
 .header h1{font-size:1.9rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
 .header p{color:var(--text2);font-size:.88rem;line-height:1.5}
 .badge{display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:.72rem;color:var(--accent);margin-top:8px}
 
 /* Mode tabs */
-.tabs{display:flex;justify-content:center;gap:0;margin:20px auto;max-width:680px;background:var(--card);border:1px solid var(--border);border-radius:30px;padding:4px;overflow-x:auto}
-.tab{flex:1;min-width:0;padding:9px 12px;border-radius:26px;border:none;background:transparent;color:var(--text2);font-size:.82rem;font-weight:600;cursor:pointer;transition:all .25s;font-family:inherit;white-space:nowrap}
+.tabs{display:flex;justify-content:center;gap:0;margin:20px auto;max-width:920px;background:var(--card);border:1px solid var(--border);border-radius:30px;padding:4px;overflow-x:auto}
+.tab{flex:1;min-width:0;padding:9px 10px;border-radius:26px;border:none;background:transparent;color:var(--text2);font-size:.76rem;font-weight:600;cursor:pointer;transition:all .25s;font-family:inherit;white-space:nowrap}
 .tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 15px rgba(56,189,248,.3)}
 .tab:hover:not(.active){color:var(--text)}
 
@@ -177,7 +177,7 @@ body{font-family:'Pretendard Variable','Noto Sans KR',sans-serif;background:var(
 .empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
 .empty-state .icon{font-size:2.5rem;margin-bottom:12px}
 .two-col{display:grid;grid-template-columns:280px 1fr;gap:16px}
-@media(max-width:768px){.two-col{grid-template-columns:1fr}.roadmap-grid{grid-template-columns:repeat(3,1fr)}.tabs{flex-wrap:nowrap;overflow-x:auto}}
+@media(max-width:768px){.two-col{grid-template-columns:1fr}.roadmap-grid{grid-template-columns:repeat(3,1fr)}.tabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%}.tab{font-size:.68rem;padding:8px 6px}}
 </style>
 </head>
 <body>
@@ -349,8 +349,6 @@ function getUnivs(){
 function filterMaj(){if(!sTxt)return MAJORS;const q=sTxt.toLowerCase();return MAJORS.filter(m=>m.name.toLowerCase().includes(q)||m.desc.includes(q)||m.field.includes(q)||m.keywords.some(k=>k.includes(q)))}
 
 function render(){
-  // 로그인 상태면 프로필 등급 자동 반영
-  if(profileUser&&profileData&&profileData.grade){myGrade=parseFloat(profileData.grade)||0}
   document.getElementById('app').innerHTML=`
     <div class="header"><h1>🧭 입시 나침반</h1><p>선택과목과 학과/대학을 양방향으로 탐색하세요</p><span class="badge">2022 개정 교육과정 · 학종 DB ${UNIV_DB.length}개 대학</span></div>
     <div class="tabs">
@@ -362,7 +360,7 @@ function render(){
       <button class="tab ${mode==='C'?'active':''}" onclick="SM('C')">⚙️ DB 관리</button>
     </div>
     ${mode==='A'?renderA():mode==='B'?renderB():mode==='C'?renderC():mode==='D'?renderD():mode==='E'?renderE():renderF()}
-    <div class="footer">입시 나침반 v5.4 (웹 서비스) — 2027학년도 학종 가이드북 기반 · 제주여고 정보교과<br>※ 실제 지원 시 반드시 해당 대학 모집요강을 직접 확인하세요</div>`;
+    <div class="footer">입시 나침반 v5.3.1 (웹 서비스) — 2027학년도 학종 가이드북 기반 · 제주여고 정보교과<br>※ 실제 지원 시 반드시 해당 대학 모집요강을 직접 확인하세요</div>`;
 }
 
 function renderA(){
@@ -372,7 +370,7 @@ function renderA(){
     ${!selSub.size?'<div class="empty"><div class="empty-icon">📚</div><div class="empty-text">선택과목을 클릭하면 관련 학과와 대학이 나타납니다</div></div>':`
     <div class="no-print print-options"><button class="print-btn" onclick="window.print()">🖨️ 현재 결과 인쇄</button><button class="print-btn pdf" onclick="exportPDF()">📄 PDF 저장</button></div>
     <div class="stats"><div class="stat"><div class="stat-num">${selSub.size}</div><div class="stat-label">선택 과목</div></div><div class="stat"><div class="stat-num">${m.length}</div><div class="stat-label">관련 학과</div></div><div class="stat"><div class="stat-num">${m.filter(x=>x.mr>=.5).length}</div><div class="stat-label">강력 매칭</div></div><div class="stat"><div class="stat-num">${u.length}</div><div class="stat-label">지원가능 대학</div></div></div>
-    <div class="step" style="margin-bottom:16px"><div class="step-title" style="margin-bottom:8px"><span style="font-size:.85rem;font-weight:600;color:var(--accent2)">📊 내 평균등급으로 필터링 \${profileUser&&profileData&&profileData.grade?'(프로필 연동 ✓)':'(선택)'}</span></div>
+    <div class="step" style="margin-bottom:16px"><div class="step-title" style="margin-bottom:8px"><span style="font-size:.85rem;font-weight:600;color:var(--accent2)">📊 내 평균등급으로 필터링 (선택)</span></div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       <input type="range" min="10" max="65" step="1" value="${myGrade*10||30}" oninput="setMyGrade(this.value/10)" style="flex:1;min-width:150px;accent-color:var(--accent)">
       <span style="font-size:.9rem;font-weight:700;color:var(--accent);min-width:60px">${myGrade?myGrade.toFixed(1)+'등급':'미설정'}</span>
@@ -1002,25 +1000,6 @@ function rUP(univs, matchedMajors){
     contextNote=`<div style="font-size:.72rem;color:var(--green);padding:8px 12px;background:rgba(52,211,153,.06);border:1px solid rgba(52,211,153,.15);border-radius:8px;margin-bottom:10px">✅ 매칭된 학과(${allMajorNames.slice(0,5).join(', ')}${allMajorNames.length>5?' 등':''})의 학과별 모집인원·경쟁률이 <b>●</b>로 표시됩니다. 학과 카드를 클릭하면 해당 학과 상세 전략을 확인할 수 있습니다.</div>`;
   }
   
-  // 합격 가능성 그룹 카운트
-  let grpCount={safe:0,fit:0,challenge:0,reach:0,nodata:0};
-  if(myGrade>0){
-    univs.forEach(u=>{
-      const best=u.mp.reduce((b,p)=>{if(!p.grades)return b;const g=p.grades['인문']||p.grades['자연'];return g?Math.min(b,g.avg):b},99);
-      if(best>=99){grpCount.nodata++}
-      else{const diff=best-myGrade;if(diff>=1.0)grpCount.safe++;else if(diff>=0.3)grpCount.fit++;else if(diff>=-0.3)grpCount.challenge++;else grpCount.reach++}
-    });
-    const total=grpCount.safe+grpCount.fit+grpCount.challenge+grpCount.reach;
-    if(total>0){
-      contextNote+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
-        ${grpCount.safe?'<div style="flex:1;min-width:100px;text-align:center;padding:8px;border-radius:8px;background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2)"><div style="font-size:1.1rem;font-weight:800;color:var(--green)">'+grpCount.safe+'</div><div style="font-size:.65rem;color:var(--green)">✅ 안정</div></div>':''}
-        ${grpCount.fit?'<div style="flex:1;min-width:100px;text-align:center;padding:8px;border-radius:8px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2)"><div style="font-size:1.1rem;font-weight:800;color:var(--amber)">'+grpCount.fit+'</div><div style="font-size:.65rem;color:var(--amber)">🔶 적정</div></div>':''}
-        ${grpCount.challenge?'<div style="flex:1;min-width:100px;text-align:center;padding:8px;border-radius:8px;background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.2)"><div style="font-size:1.1rem;font-weight:800;color:var(--red)">'+grpCount.challenge+'</div><div style="font-size:.65rem;color:var(--red)">🔺 도전</div></div>':''}
-        ${grpCount.reach?'<div style="flex:1;min-width:100px;text-align:center;padding:8px;border-radius:8px;background:rgba(100,116,139,.08);border:1px solid rgba(100,116,139,.2)"><div style="font-size:1.1rem;font-weight:800;color:var(--text3)">'+grpCount.reach+'</div><div style="font-size:.65rem;color:var(--text3)">⬆ 상향</div></div>':''}
-        ${grpCount.nodata?'<div style="flex:1;min-width:100px;text-align:center;padding:8px;border-radius:8px;background:var(--card2);border:1px solid var(--border)"><div style="font-size:1.1rem;font-weight:800;color:var(--text3)">'+grpCount.nodata+'</div><div style="font-size:.65rem;color:var(--text3)">데이터 없음</div></div>':''}
-      </div>`;
-    }
-  }
   return contextNote+univs.map(u=>{
     const io=openP.has(u.nm);
     
