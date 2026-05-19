@@ -17,8 +17,8 @@ body{font-family:'Pretendard Variable','Noto Sans KR',sans-serif;background:var(
 .badge{display:inline-block;background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:4px 14px;font-size:.72rem;color:var(--accent);margin-top:8px}
 
 /* Mode tabs */
-.tabs{display:flex;justify-content:center;gap:0;margin:20px auto;max-width:920px;background:var(--card);border:1px solid var(--border);border-radius:30px;padding:4px;overflow-x:auto}
-.tab{flex:1;min-width:0;padding:9px 10px;border-radius:26px;border:none;background:transparent;color:var(--text2);font-size:.76rem;font-weight:600;cursor:pointer;transition:all .25s;font-family:inherit;white-space:nowrap}
+.tabs{display:flex;justify-content:flex-start;gap:2px;margin:20px auto;max-width:960px;background:var(--card);border:1px solid var(--border);border-radius:30px;padding:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tab{flex:0 0 auto;padding:9px 12px;border-radius:26px;border:none;background:transparent;color:var(--text2);font-size:.76rem;font-weight:600;cursor:pointer;transition:all .25s;font-family:inherit;white-space:nowrap}
 .tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 15px rgba(56,189,248,.3)}
 .tab:hover:not(.active){color:var(--text)}
 
@@ -2249,7 +2249,7 @@ function highlightText(text,query,maxLen){
 
 // Events
 window.setMyGrade=function(g){myGrade=parseFloat(g)||0;render()};
-window.SM=function(m){mode=m;selSub.clear();selMaj=null;openP.clear();sTxt='';regF='전체';if(m!=='E')simSub.clear();if(m==='F'){profileMode=profileUser?'view':'login'}if(m==='J'&&classAuth){loadCounselDB()}render()};
+window.SM=function(m){mode=m;selSub.clear();selMaj=null;openP.clear();sTxt='';regF='전체';if(m!=='E')simSub.clear();if(m==='F'){profileMode=profileUser?'view':'login'}if(m==='J'&&classAuth){loadCounselDB()}render();setTimeout(function(){var el=document.querySelector('.tab.active');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'})},50)};
 window.TS=function(s){selSub.has(s)?selSub.delete(s):selSub.add(s);render()};
 window.SMJ=function(id){selMaj=selMaj===id?null:id;openP.clear();render()};
 window.GoB=function(id){mode='B';selMaj=id;sTxt='';openP.clear();render();window.scrollTo({top:0,behavior:'smooth'})};
