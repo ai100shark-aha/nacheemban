@@ -9,4 +9,6 @@ urlpatterns = [
     path('api/db/export/', views.export_db, name='export_db'),
     path('api/db/contribute/', views.contribute, name='contribute'),
     path('api/db/status/', views.sheets_status, name='sheets_status'),
+    path('api/consult/save/', views.save_consult, name='save_consult'),
+    path('api/consult/class/', views.get_class_students, name='get_class_students'),
 ]

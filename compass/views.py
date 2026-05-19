@@ -267,3 +267,119 @@ def contribute(request):
         return JsonResponse({'ok':True,'message':msg,'action':action,'total_univs':len(db),'total_pgs':sum(len(u.get('pg',[])) for u in db),'sheets':bool(SHEETS_KEY)})
     except (json.JSONDecodeError, ValueError) as e:
         return JsonResponse({'error':f'데이터 형식 오류: {str(e)}'}, status=400)
+
+
+# ───────────────────────────────────────────────
+# 학급 현황 (담임 교사용)
+# Google Sheets Sheet2 에 저장
+# ───────────────────────────────────────────────
+
+def _get_consult_sheet():
+    """학생 상담 기록용 Sheet2 반환"""
+    try:
+        import gspread
+        from google.oauth2.service_account import Credentials
+        scope = ['https://spreadsheets.google.com/feeds','https://www.googleapis.com/auth/drive']
+        creds_json = os.environ.get('GOOGLE_CREDENTIALS')
+        if creds_json:
+            creds = Credentials.from_service_account_info(json.loads(creds_json), scopes=scope)
+        else:
+            creds_path = Path(__file__).resolve().parent.parent / 'credentials.json'
+            creds = Credentials.from_service_account_file(str(creds_path), scopes=scope)
+        client = gspread.authorize(creds)
+        spreadsheet = client.open_by_key(SHEETS_KEY)
+        # Sheet2 없으면 생성
+        try:
+            sheet = spreadsheet.worksheet('students')
+        except:
+            sheet = spreadsheet.add_worksheet(title='students', rows=1000, cols=15)
+            sheet.append_row(['sid','name','grade_yr','class_no','stu_no',
+                              'inner_grade','major','target','top_univs','univ_count','saved_at'])
+        return sheet
+    except Exception as e:
+        print(f"[Consult Sheet] 연결 실패: {e}")
+        return None
+
+@csrf_exempt
+def save_consult(request):
+    """학생 상담 기록 저장"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST only'}, status=405)
+    try:
+        data = json.loads(request.body)
+        sid = str(data.get('sid', '')).strip()
+        if not sid:
+            return JsonResponse({'error': '학번이 필요합니다'}, status=400)
+
+        if not SHEETS_KEY:
+            return JsonResponse({'error': 'Sheets 미설정'}, status=503)
+
+        sheet = _get_consult_sheet()
+        if not sheet:
+            return JsonResponse({'error': 'Sheets 연결 실패'}, status=503)
+
+        # 기존 기록 찾아서 업데이트 (없으면 추가)
+        try:
+            cell = sheet.find(sid)
+            row_idx = cell.row
+            sheet.update(f'A{row_idx}:K{row_idx}', [[
+                sid,
+                data.get('name',''),
+                data.get('grade_yr',''),
+                data.get('class_no',''),
+                data.get('stu_no',''),
+                data.get('inner_grade',''),
+                data.get('major',''),
+                data.get('target',''),
+                data.get('top_univs','[]'),
+                str(data.get('univ_count',0)),
+                data.get('saved_at','')
+            ]])
+        except:
+            # 새 행 추가
+            sheet.append_row([
+                sid,
+                data.get('name',''),
+                data.get('grade_yr',''),
+                data.get('class_no',''),
+                data.get('stu_no',''),
+                data.get('inner_grade',''),
+                data.get('major',''),
+                data.get('target',''),
+                data.get('top_univs','[]'),
+                str(data.get('univ_count',0)),
+                data.get('saved_at','')
+            ])
+
+        return JsonResponse({'ok': True, 'message': '상담 기록 저장 완료'})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+def get_class_students(request):
+    """담임 교사 - 반별 학생 조회"""
+    class_no = request.GET.get('class_no', '')
+    pw       = request.GET.get('pw', '')
+
+    if not class_no:
+        return JsonResponse({'error': '반을 선택하세요'}, status=400)
+
+    # 비밀번호 검증
+    correct_pw = os.environ.get('CLASS_PASSWORD', 'teacher1234')
+    if pw != correct_pw:
+        return JsonResponse({'error': '비밀번호가 틀렸습니다'}, status=401)
+
+    if not SHEETS_KEY:
+        return JsonResponse({'error': 'Sheets 미설정'}, status=503)
+
+    sheet = _get_consult_sheet()
+    if not sheet:
+        return JsonResponse({'error': 'Sheets 연결 실패'}, status=503)
+
+    try:
+        all_rows = sheet.get_all_records()
+        students = [r for r in all_rows if str(r.get('class_no','')) == str(class_no)]
+        return JsonResponse({'ok': True, 'students': students, 'total': len(students)})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
