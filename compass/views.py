@@ -32,30 +32,51 @@ def _get_sheet():
         return None
 
 def _load_db_from_sheets():
+    """A1~A10 청크 합산 읽기 (50,000자 셀 한계 대응)"""
     sheet = _get_sheet()
     if not sheet:
         return None
     try:
-        val = sheet.acell('A1').value
-        if val and val.strip().startswith('['):
-            return json.loads(val)
+        # A1부터 A10까지 읽어서 합산 (빈 셀 나오면 종료)
+        full_json = ''
+        for row in range(1, 11):
+            val = sheet.cell(row, 1).value
+            if not val:
+                break
+            full_json += val
+        if full_json.strip().startswith('['):
+            return json.loads(full_json)
     except Exception as e:
         print(f"[Sheets] 읽기 실패: {e}")
     return None
 
 def _save_db_to_sheets(data):
-    """Sheets에 동기 저장 (응답 전에 완료 보장)"""
+    """청크 분할 저장 - Google Sheets 50,000자 셀 한계 대응
+    A열: DB JSON 청크 (A1, A2, ...)
+    B1: 마지막 업데이트 시간
+    C1: 대학 수
+    """
     if not SHEETS_KEY:
         return
     sheet = _get_sheet()
     if not sheet:
         return
     try:
+        CHUNK = 45000
         db_json = json.dumps(data, ensure_ascii=False, separators=(',',':'))
-        sheet.update('A1', [[db_json]])
+        chunks = [db_json[i:i+CHUNK] for i in range(0, len(db_json), CHUNK)]
+
+        # 기존 A열 초기화 (최대 10행)
+        sheet.update('A1:A10', [[''] for _ in range(10)])
+
+        # 청크 저장
+        for i, chunk in enumerate(chunks):
+            sheet.update(f'A{i+1}', [[chunk]])
+
+        # 메타 정보
         sheet.update('B1', [[datetime.now().strftime('%Y-%m-%d %H:%M:%S')]])
         sheet.update('C1', [[str(len(data))]])
-        print(f"[Sheets] 저장 완료: {len(data)}개 대학")
+        print(f"[Sheets] 저장 완료: {len(data)}개 대학, {len(chunks)}개 청크")
     except Exception as e:
         print(f"[Sheets] 저장 실패: {e}")
 
