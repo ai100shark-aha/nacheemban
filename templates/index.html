@@ -370,9 +370,10 @@ function render(){
       <button class="tab ${mode==='G'?'active':''}" onclick="SM('G')">❓ 도움말</button>
       <button class="tab ${mode==='H'?'active':''}" onclick="SM('H')">🏫 학급현황</button>
       <button class="tab ${mode==='I'?'active':''}" onclick="SM('I')">💬 챗봇</button>
+      <button class="tab ${mode==='J'?'active':''}" onclick="SM('J')">📋 상담 도우미</button>
     </div>
-    ${mode==='A'?renderA():mode==='B'?renderB():mode==='C'?renderC():mode==='D'?renderD():mode==='E'?renderE():mode==='F'?renderF():mode==='H'?renderH():mode==='I'?renderI():renderG()}
-    <div class="footer">입시 나침반 v6.2 (웹 서비스) — 2027학년도 학종 가이드북 기반 · 제주여고 정보교과<br>※ 실제 지원 시 반드시 해당 대학 모집요강을 직접 확인하세요</div>`;
+    ${mode==='A'?renderA():mode==='B'?renderB():mode==='C'?renderC():mode==='D'?renderD():mode==='E'?renderE():mode==='F'?renderF():mode==='H'?renderH():mode==='I'?renderI():mode==='J'?renderJ():renderG()}
+    <div class="footer">입시 나침반 v6.3 (웹 서비스) — 2027학년도 학종 가이드북 기반 · 제주여고 정보교과<br>※ 실제 지원 시 반드시 해당 대학 모집요강을 직접 확인하세요</div>`;
 }
 
 function renderA(){
@@ -940,7 +941,7 @@ function renderG(){
           </a>
         </div>
         <div style="font-size:.68rem;color:var(--text3);margin-top:8px">
-          제주여자고등학교 정보교과 · 입시 나침반 v6.2
+          제주여자고등학교 정보교과 · 입시 나침반 v6.3
         </div>
       </div>
 
@@ -1547,6 +1548,110 @@ window.exportClassCSV = function() {
   a.click();
 };
 
+
+function renderJ(){
+  if(counselLoading) return '<div style="text-align:center;padding:60px;color:var(--text2)"><div style="font-size:2rem;margin-bottom:12px">📋</div>상담 자료를 불러오는 중...</div>';
+  if(!counselDB) return '<div style="text-align:center;padding:60px;color:var(--text2)"><div style="font-size:2rem;margin-bottom:12px">📋</div>상담 DB를 로드하지 못했습니다.<br><button class="btn" style="margin-top:12px" onclick="counselLoading=false;loadCounselDB().then(()=>render())">다시 시도</button></div>';
+
+  // 상담 시나리오 카드
+  const scenarios=counselDB.counseling_scenarios||{};
+  const scenarioKeys=Object.keys(scenarios);
+
+  let scenarioCards=scenarioKeys.map(k=>{
+    const s=scenarios[k];
+    const isActive=counselActiveScenario===k;
+    return '<div class="card" style="cursor:pointer;border:'+(isActive?'2px solid var(--accent)':'1px solid var(--border)')+';background:'+(isActive?'var(--card-hover)':'var(--card)')+'" onclick="counselActiveScenario=counselActiveScenario===\''+k.replace(/'/g,"\\'")+'\'?null:\''+k.replace(/'/g,"\\'")+'\'; counselQuery=\'\'; counselResults=[]; counselActiveSection=null; render()">'
+      +'<div style="font-weight:600;font-size:.95rem;margin-bottom:4px">'+k+'</div>'
+      +'<div style="font-size:.8rem;color:var(--text2)">'+s.keywords.slice(0,5).map(kw=>'<span style="display:inline-block;background:var(--bg2);padding:1px 6px;border-radius:8px;margin:1px;font-size:.75rem">'+kw+'</span>').join('')+'</div>'
+      +'</div>';
+  }).join('');
+
+  // 활성 시나리오의 섹션 목록
+  let sectionList='';
+  if(counselActiveScenario){
+    const sc=scenarios[counselActiveScenario];
+    const recSecs=sc.recommended_sections||[];
+    const allSecs=[];
+    (counselDB.structure||[]).forEach(part=>{
+      (part.sections||[]).forEach(sec=>{
+        if(recSecs.includes(sec.id)){
+          allSecs.push({...sec, partTitle:part.title});
+        }
+      });
+    });
+    if(allSecs.length>0){
+      sectionList='<div style="margin-top:16px"><div style="font-weight:600;margin-bottom:8px;font-size:.9rem">📖 추천 섹션</div>';
+      sectionList+=allSecs.map(sec=>{
+        const isOpen=counselActiveSection===sec.id;
+        let content='';
+        if(isOpen){
+          const chunks=getChunksBySection(sec.id);
+          content='<div style="margin-top:8px;padding:12px;background:var(--bg2);border-radius:8px;font-size:.85rem;line-height:1.7;max-height:400px;overflow-y:auto">';
+          if(sec.subsections&&sec.subsections.length>0){
+            content+='<div style="margin-bottom:8px;font-size:.8rem;color:var(--text2)">하위 섹션: '+sec.subsections.map(ss=>'<span style="display:inline-block;background:var(--card);padding:2px 8px;border-radius:8px;margin:2px;cursor:pointer" onclick="event.stopPropagation();counselQuery=\''+ss.title.replace(/'/g,"\\'")+'\';counselResults=searchCounsel(counselQuery);counselActiveScenario=null;counselActiveSection=null;render()">'+ss.title+'</span>').join('')+'</div>';
+          }
+          content+=chunks.slice(0,5).map(c=>'<div style="padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:.75rem;color:var(--accent);font-weight:600">p.'+c.page+'</span> '+c.text.slice(0,300)+(c.text.length>300?'...':'')+'</div>').join('');
+          content+='</div>';
+        }
+        return '<div class="card" style="cursor:pointer;border:'+(isOpen?'2px solid var(--accent)':'1px solid var(--border)')+'" onclick="counselActiveSection=counselActiveSection===\''+sec.id+'\'?null:\''+sec.id+'\';render()">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center">'
+          +'<div><span style="font-weight:600;font-size:.9rem">'+sec.title+'</span><span style="font-size:.8rem;color:var(--text2);margin-left:8px">p.'+sec.page_start+'~'+sec.page_end+'</span></div>'
+          +'<span style="font-size:.8rem">'+(isOpen?'▲':'▼')+'</span></div>'
+          +content+'</div>';
+      }).join('');
+      sectionList+='</div>';
+    }
+  }
+
+  // 검색 결과
+  let searchResultsHtml='';
+  if(counselResults.length>0){
+    searchResultsHtml='<div style="margin-top:16px"><div style="font-weight:600;margin-bottom:8px;font-size:.9rem">🔍 검색 결과 ('+counselResults.length+'건)</div>';
+    searchResultsHtml+=counselResults.map(r=>{
+      const c=r.chunk;
+      const sec=c.section||{};
+      return '<div class="card" style="border-left:3px solid var(--accent)">'
+        +'<div style="display:flex;justify-content:space-between;margin-bottom:6px">'
+        +'<span style="font-size:.8rem;font-weight:600;color:var(--accent)">p.'+c.page+' · '+sec.section_title+'</span>'
+        +'<span style="font-size:.75rem;color:var(--text3)">관련도 '+r.score+'</span></div>'
+        +'<div style="font-size:.85rem;line-height:1.6">'+highlightText(c.text, counselQuery)+'</div>'
+        +'<div style="margin-top:6px">'+(c.keywords||[]).slice(0,6).map(k=>'<span style="display:inline-block;background:var(--bg2);padding:1px 5px;border-radius:6px;margin:1px;font-size:.7rem;color:var(--text2)">'+k+'</span>').join('')+'</div>'
+        +'</div>';
+    }).join('');
+    searchResultsHtml+='</div>';
+  }
+
+  // 전체 목차 (축소 가능)
+  let tocHtml='<div style="margin-top:20px"><details><summary style="cursor:pointer;font-weight:600;font-size:.9rem;padding:8px 0">📑 전체 목차 ('+counselDB.meta.total_sections+'개 섹션, '+counselDB.meta.total_subsections+'개 하위)</summary><div style="margin-top:8px">';
+  (counselDB.structure||[]).forEach(part=>{
+    tocHtml+='<div style="font-weight:700;font-size:.9rem;margin:12px 0 6px;padding:4px 8px;background:var(--bg2);border-radius:6px">'+part.title+'</div>';
+    (part.sections||[]).forEach(sec=>{
+      tocHtml+='<div style="padding:4px 0 4px 16px;cursor:pointer;font-size:.85rem" onclick="counselActiveSection=\''+sec.id+'\';counselActiveScenario=null;counselResults=[];counselQuery=\'\';render()"><span style="color:var(--accent)">▸</span> '+sec.title+' <span style="color:var(--text3);font-size:.75rem">p.'+sec.page_start+'~'+sec.page_end+'</span></div>';
+      if(sec.subsections){
+        sec.subsections.forEach(ss=>{
+          tocHtml+='<div style="padding:2px 0 2px 32px;font-size:.8rem;color:var(--text2);cursor:pointer" onclick="counselQuery=\''+ss.title.replace(/'/g,"\\'")+'\';;counselResults=searchCounsel(counselQuery);counselActiveScenario=null;counselActiveSection=null;render()">· '+ss.title+' <span style="color:var(--text3);font-size:.7rem">p.'+ss.page+'</span></div>';
+        });
+      }
+    });
+  });
+  tocHtml+='</div></details></div>';
+
+  return '<div style="max-width:900px;margin:0 auto">'
+    +'<div style="text-align:center;margin-bottom:20px"><div style="font-size:1.4rem;font-weight:700;margin-bottom:4px">📋 상담 도우미</div>'
+    +'<div style="font-size:.85rem;color:var(--text2)">'+counselDB.meta.title+' · '+counselDB.meta.source+'</div>'
+    +'<div style="font-size:.8rem;color:var(--text3);margin-top:2px">'+counselDB.meta.total_chunks+'개 텍스트 청크 · '+counselDB.meta.total_sections+'개 섹션 · '+Object.keys(scenarios).length+'개 상담 시나리오</div></div>'
+    // 검색창
+    +'<div style="position:relative;margin-bottom:20px"><input type="text" value="'+counselQuery.replace(/"/g,'&quot;')+'" placeholder="검색어 입력 (예: 경영학 과목선택, 내신 평가, PBL 탐구...)" style="width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:12px;font-size:.95rem;background:var(--card);box-sizing:border-box" oninput="counselQuery=this.value" onkeydown="if(event.key===\'Enter\'){counselResults=searchCounsel(counselQuery);counselActiveScenario=null;counselActiveSection=null;render()}">'
+    +'<button style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--accent);color:white;border:none;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:.85rem" onclick="counselResults=searchCounsel(counselQuery);counselActiveScenario=null;counselActiveSection=null;render()">검색</button></div>'
+    // 상담 시나리오 카드
+    +'<div style="font-weight:600;margin-bottom:8px;font-size:.9rem">🎯 상담 시나리오 (학생 유형별 빠른 탐색)</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px;margin-bottom:8px">'+scenarioCards+'</div>'
+    +sectionList
+    +searchResultsHtml
+    +tocHtml
+    +'</div>';
+}
+
 function renderH() {
   if(!classAuth) {
     // 로그인 화면
@@ -2068,7 +2173,75 @@ function rUP(univs, matchedMajors){
 
 // Events
 window.setMyGrade=function(g){myGrade=parseFloat(g)||0;render()};
-window.SM=function(m){mode=m;selSub.clear();selMaj=null;openP.clear();sTxt='';regF='전체';if(m!=='E')simSub.clear();if(m==='F'){profileMode=profileUser?'view':'login'}render()};
+window.
+// === 상담 도우미 데이터 ===
+let counselDB=null, counselLoading=false, counselQuery='', counselResults=[], counselActiveScenario=null, counselActiveSection=null;
+
+async function loadCounselDB(){
+  if(counselDB||counselLoading) return;
+  counselLoading=true;
+  try{
+    const r=await fetch('/static/data/counseling_db_v2.json');
+    counselDB=await r.json();
+    console.log('상담DB 로드:',counselDB.meta.total_chunks,'청크');
+  }catch(e){console.error('상담DB 로드 실패:',e)}
+  counselLoading=false;
+}
+
+function searchCounsel(q){
+  if(!counselDB||!q.trim()) return [];
+  const terms=q.toLowerCase().split(/\s+/).filter(t=>t.length>0);
+  const scored=counselDB.chunks.map(c=>{
+    let score=0;
+    const txt=(c.text||'').toLowerCase();
+    const kws=(c.keywords||[]).map(k=>k.toLowerCase());
+    const secTitle=((c.section||{}).section_title||'').toLowerCase();
+    for(const t of terms){
+      // 키워드 매칭 (높은 가중치)
+      if(kws.some(k=>k.includes(t))) score+=10;
+      // 섹션 제목 매칭
+      if(secTitle.includes(t)) score+=5;
+      // 본문 매칭
+      const idx=txt.indexOf(t);
+      if(idx!==-1){
+        score+=3;
+        // 앞부분에 나올수록 가산
+        if(idx<200) score+=2;
+      }
+    }
+    return {chunk:c, score};
+  }).filter(x=>x.score>0);
+  scored.sort((a,b)=>b.score-a.score);
+  return scored.slice(0,15);
+}
+
+function getChunksBySection(secId){
+  if(!counselDB) return [];
+  return counselDB.chunks.filter(c=>c.section&&c.section.section_id===secId);
+}
+
+function highlightText(text, query, maxLen=400){
+  if(!query.trim()) return text.slice(0,maxLen)+'...';
+  const terms=query.toLowerCase().split(/\s+/).filter(t=>t);
+  const lower=text.toLowerCase();
+  let bestIdx=0, bestScore=0;
+  for(let i=0;i<lower.length-100;i+=50){
+    let s=0;
+    const window=lower.slice(i,i+maxLen);
+    for(const t of terms) if(window.includes(t)) s++;
+    if(s>bestScore){bestScore=s;bestIdx=i}
+  }
+  let excerpt=text.slice(bestIdx,bestIdx+maxLen);
+  if(bestIdx>0) excerpt='...'+excerpt;
+  if(bestIdx+maxLen<text.length) excerpt+='...';
+  for(const t of terms){
+    const re=new RegExp('('+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','gi');
+    excerpt=excerpt.replace(re,'<mark>$1</mark>');
+  }
+  return excerpt;
+}
+
+SM=function(m){mode=m;selSub.clear();selMaj=null;openP.clear();sTxt='';regF='전체';if(m!=='E')simSub.clear();if(m==='F'){profileMode=profileUser?'view':'login'}if(m==='J'){loadCounselDB()}render()};
 window.TS=function(s){selSub.has(s)?selSub.delete(s):selSub.add(s);render()};
 window.SMJ=function(id){selMaj=selMaj===id?null:id;openP.clear();render()};
 window.GoB=function(id){mode='B';selMaj=id;sTxt='';openP.clear();render();window.scrollTo({top:0,behavior:'smooth'})};
