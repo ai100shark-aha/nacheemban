@@ -1550,6 +1550,9 @@ window.exportClassCSV = function() {
 
 
 function renderJ(){
+  if(!classAuth){
+    return'<div style="max-width:400px;margin:0 auto;padding:20px"><div class="profile-card"><div style="text-align:center;margin-bottom:20px"><div style="font-size:2.5rem">📋</div><div style="font-size:1.1rem;font-weight:700;margin-top:8px">상담 도우미 (교사 전용)</div><div style="font-size:.78rem;color:var(--text2);margin-top:4px">담임 교사 로그인 후 이용할 수 있습니다</div></div><div style="text-align:center;margin-top:16px"><button class="btn" style="background:var(--accent);color:white;padding:10px 24px;border:none;border-radius:8px;cursor:pointer;font-size:.9rem" onclick="SM(\'H\')">🏫 학급현황에서 로그인</button></div></div></div>';
+  }
   if(counselLoading)return'<div style="text-align:center;padding:60px;color:var(--text2)"><div style="font-size:2rem;margin-bottom:12px">📋</div>상담 자료를 불러오는 중...</div>';
   if(!counselDB)return'<div style="text-align:center;padding:60px;color:var(--text2)"><div style="font-size:2rem;margin-bottom:12px">📋</div>상담 DB를 로드하지 못했습니다.<br><button class="btn" style="margin-top:12px" onclick="counselLoading=false;loadCounselDB().then(function(){render()})">다시 시도</button></div>';
 
@@ -2246,7 +2249,7 @@ function highlightText(text,query,maxLen){
 
 // Events
 window.setMyGrade=function(g){myGrade=parseFloat(g)||0;render()};
-window.SM=function(m){mode=m;selSub.clear();selMaj=null;openP.clear();sTxt='';regF='전체';if(m!=='E')simSub.clear();if(m==='F'){profileMode=profileUser?'view':'login'}if(m==='J'){loadCounselDB()}render()};
+window.SM=function(m){mode=m;selSub.clear();selMaj=null;openP.clear();sTxt='';regF='전체';if(m!=='E')simSub.clear();if(m==='F'){profileMode=profileUser?'view':'login'}if(m==='J'&&classAuth){loadCounselDB()}render()};
 window.TS=function(s){selSub.has(s)?selSub.delete(s):selSub.add(s);render()};
 window.SMJ=function(id){selMaj=selMaj===id?null:id;openP.clear();render()};
 window.GoB=function(id){mode='B';selMaj=id;sTxt='';openP.clear();render();window.scrollTo({top:0,behavior:'smooth'})};
