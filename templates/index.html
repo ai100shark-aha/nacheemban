@@ -1073,6 +1073,27 @@ function queryUnivs({majors=[], regions=[], maxGrade=null, noSuneung=false, hasI
   return results.slice(0, limit);
 }
 
+
+// ── 일반고 경고 문구 생성 ──────────────────────────────
+const TOP_UNIVS_1 = ['서울대학교','연세대학교','고려대학교','포항공과대학교','KAIST','GIST','DGIST','UNIST','KENTECH'];
+const TOP_UNIVS_2 = ['성균관대학교','한양대학교','이화여자대학교','서강대학교','중앙대학교','경희대학교','한국외국어대학교','서울시립대학교','건국대학교','동국대학교','홍익대학교','숙명여자대학교','숭실대학교','광운대학교'];
+
+function getWarning(univName, gradeAvg) {
+  if(!gradeAvg) return null;
+  const TOP1 = ['서울대학교','연세대학교','고려대학교','포항공과대학교','KAIST','GIST','DGIST','UNIST','KENTECH'];
+  const TOP2 = ['성균관대학교','한양대학교','이화여자대학교','서강대학교','중앙대학교','경희대학교','한국외국어대학교','서울시립대학교'];
+  const TOP3 = ['건국대학교','동국대학교','홍익대학교','숙명여자대학교','숭실대학교','광운대학교','국민대학교','세종대학교','단국대학교','인하대학교','아주대학교'];
+  if(TOP1.includes(univName) && gradeAvg <= 2.5)
+    return '특목·자사고 합격자 비율이 매우 높습니다. 일반고 기준 실질 합격선은 더 높을 수 있으니 담임 선생님과 충분히 상담하세요.';
+  if(TOP2.includes(univName) && gradeAvg <= 3.0)
+    return '전국 단위 경쟁 대학입니다. 일반고 기준 실질 합격선은 더 높을 수 있습니다.';
+  if(TOP3.includes(univName) && gradeAvg <= 2.5)
+    return '수도권 상위권 대학으로 전국 단위 경쟁입니다. 내신 외 세특·활동의 질이 중요합니다.';
+  if(gradeAvg <= 1.8)
+    return '합격자 평균이 매우 낮습니다. 전국 최상위권 학생들과 경쟁하는 전형입니다.';
+  return null;
+}
+
 // ── 응답 생성기 ──────────────────────────────
 function generateResponse(q, intent, ent) {
   const grade = ent.grade || chatContext.myGradeCtx;
@@ -1219,7 +1240,8 @@ function generateResponse(q, intent, ent) {
         title: `${r.univ} - ${r.pgName}`,
         sub: `${r.deptName ? r.deptName+' ' : ''}모집 ${r.deptQ||r.quota||'?'}명 ${r.deptCr||r.cr ? '| 경쟁률 '+(r.deptCr||r.cr)+':1' : ''}`,
         detail: `합격등급: ${r.grade ? r.grade+'등급' : '?'} | 면접: ${r.iv>0?r.iv+'%':'없음'} | 수능최저: ${r.mn||'미적용'}`,
-        tag: r.grade && grade ? (r.grade < grade-0.2 ? '도전' : r.grade <= grade+0.3 ? '적정' : '안정') : null
+        tag: r.grade && grade ? (r.grade < grade-0.2 ? '도전' : r.grade <= grade+0.3 ? '적정' : '안정') : null,
+        warning: getWarning(r.univ, r.grade)
       }))
     };
   }
@@ -1273,7 +1295,8 @@ function generateResponse(q, intent, ent) {
       cards: gradeData.slice(0,10).map(r => ({
         title: `${r.univ} - ${r.pg}`,
         sub: `합격 평균 ${r.grade}등급`,
-        detail: ''
+        detail: '',
+        warning: getWarning(r.univ, r.grade)
       }))
     };
   }
@@ -1373,6 +1396,7 @@ function renderChatMessages() {
         </div>
         ${c.sub?`<div style="font-size:.7rem;color:var(--text2);margin-top:3px">${c.sub}</div>`:''}
         ${c.detail?`<div style="font-size:.65rem;color:var(--text3);margin-top:2px">${c.detail}</div>`:''}
+        ${c.warning?`<div style="font-size:.65rem;color:#f59e0b;margin-top:4px;padding:3px 6px;background:rgba(245,158,11,.1);border-radius:4px;border-left:2px solid #f59e0b">⚠️ ${c.warning}</div>`:''}
       </div>`).join('');
     return `<div style="display:flex;gap:8px;margin-bottom:10px;align-items:flex-start">
       <div style="font-size:1.2rem;flex-shrink:0">🧭</div>
@@ -2017,14 +2041,25 @@ function rUP(univs, matchedMajors){
       if(!myGrade) return '';
       const bestGrade=u.mp.reduce((best,p)=>{
         if(!p.grades) return best;
-        const g=p.grades['인문']||p.grades['자연'];
+        const g=p.grades['인문']||p.grades['자연']||p.grades['간호']||p.grades['의예']||p.grades['약학'];
         return g?Math.min(best,g.avg):best;
       },99);
       if(bestGrade>=99) return '';
       const diff=bestGrade-myGrade;
-      if(diff>=1.0) return '<span class="pbadge" style="background:rgba(52,211,153,.15);color:var(--green)">✅ 안정</span>';
-      if(diff>=0.3) return '<span class="pbadge" style="background:rgba(251,191,36,.15);color:var(--amber)">🔶 적정</span>';
-      if(diff>=-0.3) return '<span class="pbadge" style="background:rgba(248,113,113,.15);color:var(--red)">🔺 도전</span>';
+      // 일반고 경고: 대학 그룹별 기준 적용
+      const isTopUniv1=['서울대학교','연세대학교','고려대학교','포항공과대학교','KAIST','GIST','DGIST','UNIST','KENTECH'].includes(u.nm);
+      const isTopUniv2=['성균관대학교','한양대학교','이화여자대학교','서강대학교','중앙대학교','경희대학교','한국외국어대학교','서울시립대학교'].includes(u.nm);
+      const isTopUniv3=['건국대학교','동국대학교','홍익대학교','숙명여자대학교','숭실대학교','광운대학교','국민대학교','세종대학교','단국대학교','인하대학교','아주대학교'].includes(u.nm);
+      const warn1 = isTopUniv1 && bestGrade <= 2.5;
+      const warn2 = isTopUniv2 && bestGrade <= 3.0;
+      const warn3 = isTopUniv3 && bestGrade <= 2.5;
+      const warn4 = !isTopUniv1 && !isTopUniv2 && !isTopUniv3 && bestGrade <= 1.8;
+      const warnBadge=(warn1||warn2||warn3||warn4)
+        ?'<span class="pbadge" style="background:rgba(245,158,11,.15);color:#f59e0b" title="특목·자사고 합격자 비율이 높거나 전국 단위 경쟁 대학입니다. 일반고 실질 합격선은 더 높을 수 있으니 담임 선생님과 상담하세요.">⚠️ 일반고 주의</span>'
+        :'';
+      if(diff>=1.0) return warnBadge+'<span class="pbadge" style="background:rgba(52,211,153,.15);color:var(--green)">✅ 안정</span>';
+      if(diff>=0.3) return warnBadge+'<span class="pbadge" style="background:rgba(251,191,36,.15);color:var(--amber)">🔶 적정</span>';
+      if(diff>=-0.3) return warnBadge+'<span class="pbadge" style="background:rgba(248,113,113,.15);color:var(--red)">🔺 도전</span>';
       return '<span class="pbadge" style="background:rgba(248,113,113,.1);color:var(--text3)">⬆ 상향</span>';
     })()}<span class="parrow ${io?'open':''}">▼</span></div></div><div class="panel-bd ${io?'open':''}">${tableRows}</div></div>`;
   }).join('');
