@@ -31,57 +31,117 @@ def _get_sheet():
         print(f"[Sheets] 연결 실패: {e}")
         return None
 
+# Sheets 컬럼 구조
+GRADE_KEYS = ['인문','자연','의예','치의예','한의예','수의예','약학','간호','물리치료','방사선','임상병리','작업치료','치위생']
+SHEET_HEADERS = ['nm','rg','lc','tp','pg_name','pg_q','pg_method','pg_iv','pg_mn','pg_cr']               + [f'gr_{k}' for k in GRADE_KEYS] + ['dept_json','updated_at']
+
+def _db_to_rows(db):
+    """DB 리스트 → Sheets 행 리스트 변환"""
+    rows = [SHEET_HEADERS]
+    now = datetime.now().strftime('%Y-%m-%d %H:%M')
+    for u in db:
+        for pg in u.get('pg', []):
+            grades = pg.get('grades', {})
+            depts  = pg.get('dept', [])
+            row = [
+                u.get('nm',''), u.get('rg',''), u.get('lc',''), u.get('tp',''),
+                pg.get('n',''), str(pg.get('q','')), pg.get('m',''),
+                str(pg.get('iv','')), pg.get('mn',''), str(pg.get('cr','')),
+            ]
+            for k in GRADE_KEYS:
+                g = grades.get(k, {})
+                if g:
+                    val = str(g.get('avg',''))
+                    if g.get('fill'): val += f" ({g['fill']}명)"
+                else:
+                    val = ''
+                row.append(val)
+            row.append(json.dumps(depts, ensure_ascii=False) if depts else '')
+            row.append(now)
+            rows.append(row)
+    return rows
+
+def _rows_to_db(rows):
+    """Sheets 행 리스트 → DB 리스트 복원"""
+    import re as _re
+    if not rows or len(rows) < 2: return []
+    headers = rows[0]
+    db_map = {}
+    for row in rows[1:]:
+        if not row or not row[0]: continue
+        while len(row) < len(headers): row.append('')
+        d = dict(zip(headers, row))
+        nm = d.get('nm','').strip()
+        if not nm: continue
+        if nm not in db_map:
+            db_map[nm] = {'nm':nm,'rg':d.get('rg',''),'lc':d.get('lc',''),'tp':d.get('tp',''),'pg':[]}
+        pg = {}
+        if d.get('pg_name'): pg['n'] = d['pg_name']
+        if d.get('pg_q'):
+            try: pg['q'] = int(d['pg_q'])
+            except: pg['q'] = d['pg_q']
+        if d.get('pg_method'): pg['m'] = d['pg_method']
+        if d.get('pg_iv'):
+            try: pg['iv'] = int(d['pg_iv'])
+            except: pass
+        if d.get('pg_mn'): pg['mn'] = d['pg_mn']
+        if d.get('pg_cr'):
+            try: pg['cr'] = float(d['pg_cr'])
+            except: pg['cr'] = d['pg_cr']
+        grades = {}
+        for k in GRADE_KEYS:
+            val = d.get(f'gr_{k}','').strip()
+            if val:
+                m = _re.match(r'([\d.]+)\s*(?:\((\d+)명\))?', val)
+                if m:
+                    gd = {'avg': float(m.group(1))}
+                    if m.group(2): gd['fill'] = int(m.group(2))
+                    grades[k] = gd
+        if grades: pg['grades'] = grades
+        dept_json = d.get('dept_json','').strip()
+        if dept_json:
+            try: pg['dept'] = json.loads(dept_json)
+            except: pass
+        if pg.get('n'):
+            db_map[nm]['pg'].append(pg)
+    return list(db_map.values())
+
 def _load_db_from_sheets():
-    """A1~A10 청크 합산 읽기 (50,000자 셀 한계 대응)"""
+    """Sheets에서 행 단위로 DB 읽기"""
     sheet = _get_sheet()
     if not sheet:
         return None
     try:
-        # A1:A10 한 번에 읽기
-        rows = sheet.get('A1:A10')
-        full_json = ''
-        for row in rows:
-            if not row or not row[0]:
-                break
-            full_json += row[0]
-        if full_json.strip().startswith('['):
-            return json.loads(full_json)
+        all_rows = sheet.get_all_values()
+        if not all_rows or len(all_rows) < 2:
+            return None
+        # 헤더가 새 구조인지 확인
+        if all_rows[0] and all_rows[0][0] == 'nm':
+            db = _rows_to_db(all_rows)
+            if db:
+                print(f"[Sheets] 읽기 완료: {len(db)}개 대학")
+                return db
     except Exception as e:
         print(f"[Sheets] 읽기 실패: {e}")
     return None
 
 def _save_db_to_sheets(data):
-    """청크 분할 저장 - Google Sheets 50,000자 셀 한계 대응
-    A열: DB JSON 청크 (A1, A2, ...)
-    B1: 마지막 업데이트 시간
-    C1: 대학 수
-    gspread v5/v6 모두 호환: cell().update() 방식 사용
-    """
+    """DB → Sheets 행 단위 저장 (필드별 컬럼, 직접 수정 가능)"""
     if not SHEETS_KEY:
         return
     sheet = _get_sheet()
     if not sheet:
         return
     try:
-        CHUNK = 45000
-        db_json = json.dumps(data, ensure_ascii=False, separators=(',',':'))
-        chunks = [db_json[i:i+CHUNK] for i in range(0, len(db_json), CHUNK)]
-        now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        # batch_update로 한 번에 저장 (API 호출 최소화, 버전 호환)
-        updates = []
-        # A열 초기화 (최대 10행)
-        for row in range(1, 11):
-            updates.append({'range': f'A{row}', 'values': [['']]})
-        # 청크 저장
-        for i, chunk in enumerate(chunks):
-            updates.append({'range': f'A{i+1}', 'values': [[chunk]]})
-        # 메타 정보
-        updates.append({'range': 'B1', 'values': [[now_str]]})
-        updates.append({'range': 'C1', 'values': [[str(len(data))]]})
-
-        sheet.batch_update(updates)
-        print(f"[Sheets] 저장 완료: {len(data)}개 대학, {len(chunks)}개 청크, {now_str}")
+        rows = _db_to_rows(data)
+        # 기존 데이터 전체 지우고 새로 쓰기
+        sheet.clear()
+        sheet.update('A1', rows)
+        # 헤더 굵게 (선택)
+        try:
+            sheet.format('A1:Y1', {'textFormat': {'bold': True}})
+        except: pass
+        print(f"[Sheets] 저장 완료: {len(data)}개 대학, {len(rows)-1}개 전형")
     except Exception as e:
         print(f"[Sheets] 저장 실패: {e}")
         import traceback
@@ -187,7 +247,22 @@ def sheets_status(request):
         try:
             sheet = _get_sheet()
             if sheet:
-                status.update({'sheets_ok':True,'last_updated':sheet.acell('B1').value,'univ_count':sheet.acell('C1').value})
+                # 새 구조: 1행=헤더, 2행부터 데이터 → 마지막 행의 updated_at 확인
+                all_vals = sheet.get_all_values()
+                row_count = len(all_vals) - 1  # 헤더 제외
+                # updated_at은 Y열(인덱스 24)
+                last_updated = ''
+                univ_names = set()
+                for row in all_vals[1:]:
+                    if row and len(row) > 24 and row[24]: last_updated = row[24]
+                    if row and row[0]: univ_names.add(row[0])
+                status.update({
+                    'sheets_ok': True,
+                    'last_updated': last_updated or '(저장된 데이터 없음)',
+                    'univ_count': str(len(univ_names)),
+                    'pg_count': str(row_count),
+                    'structure': '행단위 (필드별 컬럼)'
+                })
             else:
                 status['sheets_ok'] = False
         except Exception as e:
