@@ -960,14 +960,18 @@ let chatContext = {    // 대화 맥락
 function detectIntent(q) {
   const t = q.replace(/\s/g,'');
   if(/내신|등급|성적/.test(t) && /몇|얼마|기준|cut|컷/.test(t)) return 'grade_query';
-  if(/어디|대학|학교/.test(t) && /갈수있|지원가능|가능한|추천|안정|적정|도전/.test(t)) return 'univ_recommend';
+  // 대학 추천: '대학'+'가능/추천' 또는 내신등급+학과명 조합 → 최우선
+  if(/어디|대학|학교/.test(t) && /갈수있|지원가능|가능|추천|안정|적정|도전/.test(t)) return 'univ_recommend';
+  if(/내신|등급/.test(t) && /대학|학교/.test(t)) return 'univ_recommend';
   if(/경쟁률|높은|낮은/.test(t)) return 'cr_query';
   if(/수능최저|최저|없는|있는/.test(t)) return 'suneung_query';
   if(/면접|서류|전형방법|어떻게/.test(t)) return 'method_query';
   if(/전형|모집|정보|알려줘|뭐야|어때/.test(t) && /대학|학교/.test(t)) return 'univ_info';
   if(/뭐야|무슨|어떤|설명|차이|다른점/.test(t)) return 'explain';
-  if(/학과|전공|계열|뭐가좋|추천/.test(t)) return 'major_recommend';
-  if(/비교|vs|대/.test(t)) return 'compare';
+  // 학과 추천: '학과'+'추천/뭐가좋/유망' 명시적으로 요청한 경우만
+  if(/뭐가좋|추천해|유망|취업잘|어떤학과|무슨학과/.test(t)) return 'major_recommend';
+  if(/이과|문과|예체능/.test(t) && /학과|전공/.test(t)) return 'major_recommend';
+  if(/비교|vs/.test(t)) return 'compare';
   if(/거기|그대학|그곳|방금|아까/.test(t)) return 'refer_prev';
   return 'general';
 }
@@ -989,8 +993,16 @@ function extractEntities(q) {
   UNIV_DB.forEach(u => { if(q.includes(u.nm.replace('학교','').replace('대학교',''))) ent.univs.push(u.nm); });
 
   // 학과 키워드 추출
-  const majorKws = ['의예','치의','한의','수의','약학','간호','컴퓨터','경영','법학','교육','심리','간호','물리치료','방사선','임상병리','작업치료','치위생','건축','전기','전자','기계','화학','생명','수학','통계','경제','사회','행정','디자인','체육','미디어'];
+  const majorKws = ['의예','치의예','한의예','수의예','약학','간호','컴퓨터','소프트웨어','인공지능','전자','전기','기계','화학공학','생명공학','건축','토목','경영','경제','금융','법학','행정','경찰','경찰행정','소방','군사','사회복지','사회학','심리','교육','사범','유아','아동','언어','국어','영어','문학','미디어','언론','디자인','미술','체육','스포츠','물리치료','방사선','임상병리','작업치료','치위생','보건','식품','영양','관광','호텔','항공','국제','무역','도시','환경','수학','통계','물리','화학','생명','생물','해양','수산','농업','산림'];
   majorKws.forEach(k => { if(q.includes(k)) ent.majors.push(k); });
+  // "OO학과/학부/전공" 패턴으로 직접 추출 (목록에 없는 학과도 처리)
+  const deptPatterns = q.match(/([가-힣]{2,8}(?:학과|학부|전공))/g);
+  if(deptPatterns) {
+    deptPatterns.forEach(d => {
+      const key = d.replace(/학과$|학부$|전공$/, '');
+      if(key.length >= 2 && !ent.majors.includes(key)) ent.majors.push(key);
+    });
+  }
 
   return ent;
 }
