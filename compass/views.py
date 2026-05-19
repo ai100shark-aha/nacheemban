@@ -37,13 +37,13 @@ def _load_db_from_sheets():
     if not sheet:
         return None
     try:
-        # A1부터 A10까지 읽어서 합산 (빈 셀 나오면 종료)
+        # A1:A10 한 번에 읽기
+        rows = sheet.get('A1:A10')
         full_json = ''
-        for row in range(1, 11):
-            val = sheet.cell(row, 1).value
-            if not val:
+        for row in rows:
+            if not row or not row[0]:
                 break
-            full_json += val
+            full_json += row[0]
         if full_json.strip().startswith('['):
             return json.loads(full_json)
     except Exception as e:
@@ -55,6 +55,7 @@ def _save_db_to_sheets(data):
     A열: DB JSON 청크 (A1, A2, ...)
     B1: 마지막 업데이트 시간
     C1: 대학 수
+    gspread v5/v6 모두 호환: cell().update() 방식 사용
     """
     if not SHEETS_KEY:
         return
@@ -65,20 +66,26 @@ def _save_db_to_sheets(data):
         CHUNK = 45000
         db_json = json.dumps(data, ensure_ascii=False, separators=(',',':'))
         chunks = [db_json[i:i+CHUNK] for i in range(0, len(db_json), CHUNK)]
+        now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        # 기존 A열 초기화 (최대 10행)
-        sheet.update('A1:A10', [[''] for _ in range(10)])
-
+        # batch_update로 한 번에 저장 (API 호출 최소화, 버전 호환)
+        updates = []
+        # A열 초기화 (최대 10행)
+        for row in range(1, 11):
+            updates.append({'range': f'A{row}', 'values': [['']]})
         # 청크 저장
         for i, chunk in enumerate(chunks):
-            sheet.update(f'A{i+1}', [[chunk]])
-
+            updates.append({'range': f'A{i+1}', 'values': [[chunk]]})
         # 메타 정보
-        sheet.update('B1', [[datetime.now().strftime('%Y-%m-%d %H:%M:%S')]])
-        sheet.update('C1', [[str(len(data))]])
-        print(f"[Sheets] 저장 완료: {len(data)}개 대학, {len(chunks)}개 청크")
+        updates.append({'range': 'B1', 'values': [[now_str]]})
+        updates.append({'range': 'C1', 'values': [[str(len(data))]]})
+
+        sheet.batch_update(updates)
+        print(f"[Sheets] 저장 완료: {len(data)}개 대학, {len(chunks)}개 청크, {now_str}")
     except Exception as e:
         print(f"[Sheets] 저장 실패: {e}")
+        import traceback
+        traceback.print_exc()
 
 def _load_db():
     import time
