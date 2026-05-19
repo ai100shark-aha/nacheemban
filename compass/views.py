@@ -44,21 +44,20 @@ def _load_db_from_sheets():
     return None
 
 def _save_db_to_sheets(data):
+    """Sheets에 동기 저장 (응답 전에 완료 보장)"""
     if not SHEETS_KEY:
         return
-    def _do():
-        sheet = _get_sheet()
-        if not sheet:
-            return
-        try:
-            db_json = json.dumps(data, ensure_ascii=False, separators=(',',':'))
-            sheet.update('A1', [[db_json]])
-            sheet.update('B1', [[datetime.now().strftime('%Y-%m-%d %H:%M:%S')]])
-            sheet.update('C1', [[str(len(data))]])
-            print(f"[Sheets] 저장 완료: {len(data)}개 대학")
-        except Exception as e:
-            print(f"[Sheets] 저장 실패: {e}")
-    threading.Thread(target=_do, daemon=True).start()
+    sheet = _get_sheet()
+    if not sheet:
+        return
+    try:
+        db_json = json.dumps(data, ensure_ascii=False, separators=(',',':'))
+        sheet.update('A1', [[db_json]])
+        sheet.update('B1', [[datetime.now().strftime('%Y-%m-%d %H:%M:%S')]])
+        sheet.update('C1', [[str(len(data))]])
+        print(f"[Sheets] 저장 완료: {len(data)}개 대학")
+    except Exception as e:
+        print(f"[Sheets] 저장 실패: {e}")
 
 def _load_db():
     import time
