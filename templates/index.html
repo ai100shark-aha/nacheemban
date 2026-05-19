@@ -2188,13 +2188,14 @@ let counselDB=null,counselLoading=false,counselQuery='',counselResults=[],counse
 
 async function loadCounselDB(){
   if(counselDB||counselLoading)return;
-  counselLoading=true;
+  counselLoading=true;render();
   try{
     const r=await fetch('/static/data/counseling_db_v2.json');
+    if(!r.ok)throw new Error('HTTP '+r.status);
     counselDB=await r.json();
     console.log('상담DB 로드:',counselDB.meta.total_chunks,'청크');
-  }catch(e){console.error('상담DB 로드 실패:',e)}
-  counselLoading=false;
+  }catch(e){console.error('상담DB 로드 실패:',e);counselDB=null}
+  counselLoading=false;render();
 }
 
 function searchCounsel(q){
