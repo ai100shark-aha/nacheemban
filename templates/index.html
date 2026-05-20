@@ -1036,24 +1036,26 @@ function queryUnivs({majors=[], regions=[], maxGrade=null, noSuneung=false, hasI
       }
       if(!majorMatch) return;
 
-      // 내신 필터 (학과별 등급 우선, 전형 등급 보조)
+      // 내신 필터 (학과별 등급 우선)
       if(maxGrade) {
         let bestGrade = null;
-        // 1) 매칭된 학과의 합격등급
-        if(matchedDept && matchedDept.g) bestGrade = matchedDept.g;
-        // 2) pg.grades에서 관련 학과 등급
+        // 1) 매칭된 학과의 합격등급 (g 또는 avg 키)
+        if(matchedDept) bestGrade = matchedDept.g || matchedDept.avg || null;
+        // 2) pg.grades에서 관련 학과명으로 검색
         if(!bestGrade && pg.grades && majors.length > 0) {
           for(const m of majors) {
             const key = Object.keys(pg.grades).find(k => k.includes(m));
             if(key && pg.grades[key].avg) { bestGrade = pg.grades[key].avg; break; }
           }
         }
-        // 3) pg.grades 전체 평균
+        // 3) pg.grades 인문/자연 평균 (학과 직접 매칭 안 될 때)
         if(!bestGrade && pg.grades) {
           const vals = Object.values(pg.grades).map(g=>g.avg).filter(Boolean);
           if(vals.length) bestGrade = Math.min(...vals);
         }
-        // 등급 데이터가 있고 maxGrade+0.5보다 좋으면(낮으면) 제외
+        // 등급 비교: bestGrade가 maxGrade+0.5보다 크면(나쁘면 OK, 좋으면 제외 아님)
+        // bestGrade 1.27 vs maxGrade 3.0 → 1.27 < 3.5 → 포함 (너무 좋은 대학도 포함)
+        // bestGrade 4.5 vs maxGrade 3.0 → 4.5 > 3.5 → 제외 (내 등급으로 갈 수 없음)
         if(bestGrade && bestGrade > maxGrade + 0.5) return;
       }
 
@@ -1066,13 +1068,17 @@ function queryUnivs({majors=[], regions=[], maxGrade=null, noSuneung=false, hasI
 
       // grades에서 관련 등급 찾기
       let relevantGrade = null;
-      if(pg.grades && majors.length > 0) {
+      // 학과별 등급 우선
+      if(matchedDept) relevantGrade = matchedDept.g || matchedDept.avg || null;
+      // pg.grades에서 학과명 매칭
+      if(!relevantGrade && pg.grades && majors.length > 0) {
         for(const m of majors) {
           const key = Object.keys(pg.grades).find(k => k.includes(m));
           if(key) { relevantGrade = pg.grades[key].avg; break; }
         }
-        if(!relevantGrade) relevantGrade = pg.grades['인문']?.avg || pg.grades['자연']?.avg;
       }
+      // 인문/자연 평균
+      if(!relevantGrade && pg.grades) relevantGrade = pg.grades['인문']?.avg || pg.grades['자연']?.avg;
 
       results.push({
         univ: u.nm, rg: u.rg, pgName: pg.n,
@@ -1084,6 +1090,8 @@ function queryUnivs({majors=[], regions=[], maxGrade=null, noSuneung=false, hasI
     });
   });
 
+  // maxGrade 필터 시 등급 없는 결과 제외
+  if(maxGrade) results = results.filter(r => r.grade !== null);
   // 정렬: 합격등급 낮은 순 (좋은 순)
   results.sort((a,b) => (a.grade||9) - (b.grade||9));
   return results.slice(0, limit);
