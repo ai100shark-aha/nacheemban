@@ -1036,10 +1036,25 @@ function queryUnivs({majors=[], regions=[], maxGrade=null, noSuneung=false, hasI
       }
       if(!majorMatch) return;
 
-      // 내신 필터
-      if(maxGrade && pg.grades) {
-        const gradeVals = Object.values(pg.grades).map(g=>g.avg).filter(Boolean);
-        if(gradeVals.length > 0 && Math.min(...gradeVals) > maxGrade + 0.5) return;
+      // 내신 필터 (학과별 등급 우선, 전형 등급 보조)
+      if(maxGrade) {
+        let bestGrade = null;
+        // 1) 매칭된 학과의 합격등급
+        if(matchedDept && matchedDept.g) bestGrade = matchedDept.g;
+        // 2) pg.grades에서 관련 학과 등급
+        if(!bestGrade && pg.grades && majors.length > 0) {
+          for(const m of majors) {
+            const key = Object.keys(pg.grades).find(k => k.includes(m));
+            if(key && pg.grades[key].avg) { bestGrade = pg.grades[key].avg; break; }
+          }
+        }
+        // 3) pg.grades 전체 평균
+        if(!bestGrade && pg.grades) {
+          const vals = Object.values(pg.grades).map(g=>g.avg).filter(Boolean);
+          if(vals.length) bestGrade = Math.min(...vals);
+        }
+        // 등급 데이터가 있고 maxGrade+0.5보다 좋으면(낮으면) 제외
+        if(bestGrade && bestGrade > maxGrade + 0.5) return;
       }
 
       // 수능최저 필터
