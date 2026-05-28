@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>직업 나침반 🧭</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, '맑은 고딕', sans-serif;
+  background: linear-gradient(180deg, #0f172a 0%, #0c0f1a 100%);
+  color: #f1f5f9; min-height: 100vh;
+}
+a { text-decoration: none; color: inherit; }
+button { font-family: inherit; cursor: pointer; }
+
+/* 스크롤바 */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+/* 통합 최상단 내비게이션 */
+.super-nav{position:sticky;top:0;z-index:9999;background:linear-gradient(135deg,#060a14 0%,#0d1320 100%);border-bottom:1px solid rgba(255,255,255,0.08);padding:0 16px;backdrop-filter:blur(12px)}
+.super-nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:0;height:46px}
+.super-nav-logo{display:flex;align-items:center;gap:8px;margin-right:28px;cursor:pointer;text-decoration:none;color:inherit}
+.super-nav-logo span:first-child{font-size:22px}
+.super-nav-logo span:last-child{font-weight:800;font-size:16px;background:linear-gradient(90deg,#38bdf8,#818cf8,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.super-nav-links{display:flex;gap:2px}
+.super-nav-link{display:flex;align-items:center;gap:6px;padding:12px 18px;color:#64748b;font-size:13px;font-weight:700;text-decoration:none;border-bottom:2px solid transparent;transition:all .2s}
+.super-nav-link:hover{color:#94a3b8}
+.super-nav-link.active{color:#38bdf8;border-bottom-color:#38bdf8;background:rgba(56,189,248,0.05)}
+.super-nav-link .nav-emoji{font-size:15px}
+
+/* 네비게이션 */
+#nav {
+  position: sticky; top: 46px; z-index: 100;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding: 0 16px;
+}
+.nav-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: flex; align-items: center; gap: 8;
+}
+.nav-logo {
+  padding: 12px 0; display: flex; align-items: center; gap: 8;
+  margin-right: 24; cursor: pointer;
+}
+.nav-logo-text {
+  font-weight: 800; font-size: 18;
+  background: linear-gradient(90deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.nav-tabs { display: flex; gap: 2; }
+.nav-tab {
+  background: transparent; border: none;
+  color: #94a3b8; padding: 14px 14px; font-size: 13; font-weight: 600;
+  border-bottom: 2px solid transparent;
+  display: flex; align-items: center; gap: 6; transition: all 0.2s;
+}
+.nav-tab.active {
+  background: rgba(96,165,250,0.15); color: #60a5fa;
+  border-bottom-color: #60a5fa;
+}
+.nav-tab:hover { color: #60a5fa; }
+
+/* 컨테이너 */
+.container { max-width: 1200px; margin: 0 auto; padding: 24px 16px; }
+.container-sm { max-width: 800px; margin: 0 auto; padding: 24px 16px; }
+.container-md { max-width: 1000px; margin: 0 auto; padding: 24px 16px; }
+
+/* 카드 그리드 */
+.card-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16;
+}
+
+/* 직업 카드 */
+.job-card {
+  background: #1e293b; border-radius: 16px; padding: 20px;
+  border: 1px solid rgba(255,255,255,0.06);
+  transition: all 0.25s ease; position: relative; overflow: hidden; cursor: pointer;
+}
+.job-card:hover { transform: translateY(-4px); }
+.job-card-header { display: flex; align-items: center; gap: 12; margin-bottom: 12; }
+.job-card-icon {
+  width: 48px; height: 48px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 24px;
+}
+.job-card-name { font-size: 15px; font-weight: 700; color: #f1f5f9; }
+.job-card-cat { font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4; }
+.job-card-desc { font-size: 13px; color: #94a3b8; line-height: 1.5; margin-bottom: 12; }
+.job-card-tags { display: flex; gap: 6; flex-wrap: wrap; }
+.job-card-tag {
+  font-size: 11px; padding: 3px 8px; border-radius: 6px;
+  background: rgba(255,255,255,0.06); color: #cbd5e1;
+}
+.job-card-salary {
+  position: absolute; top: 12px; right: 12px; font-size: 11px; color: #64748b;
+}
+
+/* 필터 버튼 */
+.filter-group { display: flex; gap: 8; flex-wrap: wrap; justify-content: center; margin-bottom: 24; }
+.filter-btn {
+  padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.1); background: transparent; color: #94a3b8;
+  transition: all 0.2s;
+}
+.filter-btn.active { border: none; color: #fff; }
+
+/* 검색 */
+.search-box {
+  width: 100%; max-width: 420px; padding: 12px 16px; border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1); background: #1e293b;
+  color: #f1f5f9; font-size: 14px; outline: none; font-family: inherit;
+}
+.search-box::placeholder { color: #64748b; }
+.search-box:focus { border-color: #60a5fa; }
+
+/* 패널 */
+.panel {
+  background: #1e293b; border-radius: 16px; padding: 24px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* 탭 버튼 */
+.tab-group { display: flex; gap: 4; margin-bottom: 24; overflow-x: auto; }
+.tab-btn {
+  padding: 10px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  border: none; white-space: nowrap; transition: all 0.2s;
+  background: rgba(255,255,255,0.05); color: #94a3b8;
+}
+.tab-btn.active { color: #fff; }
+
+/* 상세 헤더 */
+.detail-header {
+  border-radius: 20px; padding: 28px; margin-bottom: 24;
+}
+.detail-header-row { display: flex; align-items: center; gap: 16; margin-bottom: 12; }
+.detail-icon {
+  width: 64px; height: 64px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: center; font-size: 36px;
+}
+.detail-title { font-size: 24px; font-weight: 800; }
+.detail-cat { font-size: 13px; font-weight: 600; margin-top: 4; }
+.detail-oneliner { color: #cbd5e1; font-size: 15px; line-height: 1.6; }
+
+/* 연봉 박스 */
+.salary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12; margin-bottom: 16; }
+.salary-box {
+  border-radius: 12px; padding: 16px; text-align: center;
+}
+.salary-label { color: #94a3b8; font-size: 12px; margin-bottom: 6; }
+.salary-value { font-size: 18px; font-weight: 800; }
+
+/* 트렌드 아이템 */
+.trend-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: rgba(255,255,255,0.03); border-radius: 10px;
+  margin-bottom: 8;
+}
+.trend-label { color: #cbd5e1; font-size: 13px; }
+.trend-icon { font-size: 18px; }
+
+/* 적성 아이템 */
+.apt-item {
+  padding: 14px 16px; background: rgba(255,255,255,0.03); border-radius: 12px;
+  display: flex; align-items: flex-start; gap: 12; margin-bottom: 10;
+}
+.apt-weight {
+  padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; white-space: nowrap;
+}
+.apt-weight-high { background: #ef444433; color: #fca5a5; }
+.apt-weight-mid { background: #f59e0b33; color: #fcd34d; }
+.apt-weight-low { background: #22c55e33; color: #86efac; }
+.apt-text { color: #cbd5e1; font-size: 14px; line-height: 1.5; }
+
+/* 전망 아이템 */
+.outlook-item {
+  padding: 16px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 12;
+}
+.outlook-head { display: flex; align-items: center; gap: 8; margin-bottom: 6; }
+.outlook-icon { font-size: 18px; }
+.outlook-label { color: #f1f5f9; font-size: 14px; font-weight: 700; }
+.outlook-value { color: #94a3b8; font-size: 13px; padding-left: 30px; }
+
+/* 과목 연결 */
+.subj-item {
+  display: flex; align-items: center; gap: 12; padding: 12px 16px;
+  border-radius: 12px; margin-bottom: 10; cursor: pointer; transition: all 0.2s;
+}
+.subj-item:hover { opacity: 0.85; }
+.subj-icon { font-size: 20px; }
+.subj-name { font-size: 14px; font-weight: 700; }
+.subj-reason { color: #94a3b8; font-size: 12px; }
+
+/* 전공 버튼 */
+.major-btn {
+  padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; font-family: inherit;
+}
+
+/* 경로 스텝 */
+.path-step { display: flex; flex-direction: column; align-items: center; }
+.path-box {
+  border-radius: 16px; padding: 16px 32px; text-align: center; min-width: 220px;
+}
+.path-arrow {
+  display: flex; flex-direction: column; align-items: center; padding: 4px 0;
+}
+.path-line { width: 2px; height: 16px; }
+
+/* 과목 페이지 */
+.subj-page-btn {
+  padding: 10px 18px; border-radius: 12px; font-size: 14px; font-weight: 700;
+  border: none; cursor: pointer; display: flex; align-items: center; gap: 6;
+  transition: all 0.2s; font-family: inherit;
+}
+.subj-page-info {
+  border-radius: 16px; padding: 24px; margin-bottom: 24; text-align: center;
+}
+.subj-job-item {
+  background: #1e293b; border-radius: 14px; padding: 16px 20px;
+  border: 1px solid rgba(255,255,255,0.06); cursor: pointer;
+  display: flex; align-items: center; justify-content: space-between;
+  transition: all 0.2s; margin-bottom: 12px;
+}
+.subj-job-item:hover { border-color: rgba(255,255,255,0.15); }
+
+/* 전공 페이지 */
+.major-page-btn {
+  padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+}
+.major-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20; }
+.major-subj-item {
+  display: flex; align-items: center; gap: 10; padding: 10px 12px;
+  background: rgba(99,102,241,0.08); border-radius: 10px; margin-bottom: 8px;
+}
+.major-subj-num {
+  width: 24px; height: 24px; border-radius: 50%; background: #6366f1;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 11px; font-weight: 800; flex-shrink: 0;
+}
+.major-job-item {
+  display: flex; align-items: center; gap: 12; padding: 12px 14px;
+  background: rgba(255,255,255,0.03); border-radius: 10px; cursor: pointer;
+  transition: all 0.2s; margin-bottom: 8px;
+}
+.major-job-item:hover { background: rgba(255,255,255,0.08); }
+
+/* 경로 탐색 */
+.path-job-btn {
+  padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit; transition: all 0.2s;
+  border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #94a3b8;
+}
+.path-job-btn.active { border: none; color: #fff; }
+
+/* 뒤로가기 */
+.back-btn {
+  background: none; border: none; color: #60a5fa; cursor: pointer;
+  font-size: 13px; margin-bottom: 16; display: flex; align-items: center; gap: 4;
+  font-family: inherit;
+}
+
+/* 페이지 타이틀 */
+.page-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.page-subtitle { color: #94a3b8; font-size: 14px; }
+.section-title { color: #f1f5f9; font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+
+/* 경로 페이지 하단 그리드 */
+.path-bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16; margin-top: 20; }
+
+/* 빈 상태 */
+.empty-state { text-align: center; padding: 64px; color: #64748b; background: #1e293b; border-radius: 20px; }
+
+/* 일일업무 아이템 */
+.daily-item {
+  display: flex; align-items: center; gap: 12; padding: 8px 12px; border-radius: 8px;
+}
+.daily-item:nth-child(odd) { background: rgba(255,255,255,0.03); }
+.daily-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* 경로 단계 번호 */
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 12px; font-weight: 800; flex-shrink: 0;
+}
+.step-line { width: 2px; height: 24px; }
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .super-nav-link { padding: 12px 10px; font-size: 11px; }
+  .super-nav-logo { margin-right: 12px; }
+  .super-nav-logo span:last-child { font-size: 13px; }
+  .major-grid { grid-template-columns: 1fr; }
+  .path-bottom-grid { grid-template-columns: 1fr; }
+  .salary-grid { grid-template-columns: 1fr; }
+  .page-title { font-size: 22px; }
+  .nav-logo-text { font-size: 15px; }
+  .nav-tab span:last-child { display: none; }
+}
+
+/* 페이드 인 애니메이션 */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in { animation: fadeIn 0.3s ease; }
+</style>
+</head>
+<body>
+
+<!-- 통합 최상단 내비게이션 -->
+<nav class="super-nav">
+  <div class="super-nav-inner">
+    <a class="super-nav-logo" href="index.html">
+      <span>🧭</span><span>나침반</span>
+    </a>
+    <div class="super-nav-links">
+      <a class="super-nav-link" href="index.html"><span class="nav-emoji">🎓</span> 입시 나침반</a>
+      <a class="super-nav-link active" href="career.html"><span class="nav-emoji">💼</span> 직업 나침반</a>
+    </div>
+  </div>
+</nav>
+
+<!-- 직업 나침반 네비게이션 -->
+<nav id="nav">
+  <div class="nav-inner">
+    <div class="nav-logo" onclick="navigate('dashboard')">
+      <span style="font-size:24px">🧭</span>
+      <span class="nav-logo-text">직업 나침반</span>
+    </div>
+    <div class="nav-tabs" id="navTabs"></div>
+  </div>
+</nav>
+
+<!-- 메인 콘텐츠 -->
+<main id="app"></main>
+
+<script>
+// ═══════════════════════════════════════
+// 데이터
+// ═══════════════════════════════════════
+const CATEGORIES = {
+  "IT/테크": { icon: "💻", color: "#6366f1" },
+  "의료/보건": { icon: "🏥", color: "#ef4444" },
+  "교육/공공": { icon: "📚", color: "#f59e0b" },
+  "경영/금융": { icon: "📊", color: "#10b981" },
+  "법/사회": { icon: "⚖️", color: "#8b5cf6" },
+  "크리에이티브": { icon: "🎨", color: "#ec4899" },
+};
+
+const SUBJECTS = {
+  수학: { icon: "📐", color: "#6366f1", desc: "논리적 사고와 문제 해결의 기초" },
+  영어: { icon: "🌍", color: "#3b82f6", desc: "글로벌 소통과 전문 문서 해석" },
+  정보: { icon: "💻", color: "#10b981", desc: "컴퓨팅 사고와 프로그래밍 기초" },
+  과학: { icon: "🔬", color: "#f59e0b", desc: "자연 현상의 원리와 탐구 능력" },
+  국어: { icon: "📝", color: "#ef4444", desc: "표현력, 독해력, 비판적 사고" },
+  사회: { icon: "🏛️", color: "#8b5cf6", desc: "사회 구조와 제도 이해" },
+  물리: { icon: "⚡", color: "#f97316", desc: "역학, 전자기, 에너지의 원리" },
+  화학: { icon: "🧪", color: "#14b8a6", desc: "물질의 구조와 반응 이해" },
+  생물: { icon: "🧬", color: "#22c55e", desc: "생명 현상과 인체 이해" },
+  체육: { icon: "🏃", color: "#ec4899", desc: "신체 활동과 건강 관리" },
+};
+
+const MAJORS = {
+  컴퓨터공학: { jobs: ["소프트웨어 개발자","AI 엔지니어","게임 개발자","데이터 분석가"], subjects: ["자료구조","알고리즘","운영체제","데이터베이스","컴퓨터구조","네트워크"] },
+  소프트웨어학: { jobs: ["소프트웨어 개발자","게임 개발자"], subjects: ["소프트웨어공학","웹프로그래밍","모바일앱개발","클라우드컴퓨팅"] },
+  인공지능학: { jobs: ["AI 엔지니어","데이터 분석가"], subjects: ["머신러닝","딥러닝","자연어처리","컴퓨터비전","강화학습"] },
+  디자인학: { jobs: ["UI/UX 디자이너"], subjects: ["시각디자인","인터랙션디자인","사용자경험","타이포그래피","색채학"] },
+  의학: { jobs: ["의사"], subjects: ["해부학","생리학","병리학","약리학","내과학","외과학"] },
+  간호학: { jobs: ["간호사"], subjects: ["기초간호학","성인간호학","아동간호학","정신간호학","지역사회간호학"] },
+  약학: { jobs: ["약사"], subjects: ["약물학","생약학","약제학","임상약학","독성학"] },
+  물리치료학: { jobs: ["물리치료사"], subjects: ["운동치료학","물리적인자치료","신경계물리치료","근골격계물리치료"] },
+  교육학: { jobs: ["교사"], subjects: ["교육심리학","교육과정론","교육방법론","교육평가","교육철학"] },
+  심리학: { jobs: ["심리상담사"], subjects: ["상담심리학","임상심리학","발달심리학","이상심리학","심리검사"] },
+  경영학: { jobs: ["마케팅 전문가","금융 분석가"], subjects: ["마케팅원론","재무관리","조직행동론","경영전략","회계원리"] },
+  회계학: { jobs: ["회계사"], subjects: ["중급회계","원가회계","세무회계","감사론","재무제표분석"] },
+  법학: { jobs: ["변호사"], subjects: ["헌법","민법","형법","행정법","상법","민사소송법"] },
+  행정학: { jobs: ["공무원"], subjects: ["행정학개론","정책학","조직론","재무행정","지방자치론"] },
+  건축학: { jobs: ["건축가"], subjects: ["건축설계","건축구조","건축환경","건축역사","도시계획"] },
+  환경공학: { jobs: ["환경공학자"], subjects: ["대기오염제어","수질관리","폐기물처리","환경영향평가","기후변화"] },
+  미디어학: { jobs: ["유튜버/크리에이터"], subjects: ["영상제작","미디어기획","디지털마케팅","스토리텔링","편집기술"] },
+  경찰행정학: { jobs: ["경찰관"], subjects: ["범죄학","형사정책","경찰학개론","수사학","교통경찰론"] },
+  금융학: { jobs: ["금융 분석가"], subjects: ["투자론","금융시장론","파생상품","리스크관리","금융공학"] },
+};
+
+const JOBS = [
+  { name:"소프트웨어 개발자", category:"IT/테크", emoji:"👨‍💻", oneliner:"코드로 세상의 문제를 해결하는 사람",
+    description:"웹사이트, 앱, 시스템 등 소프트웨어를 설계하고 개발합니다. 사용자의 요구사항을 분석하고, 프로그래밍 언어로 구현하며, 테스트와 유지보수를 담당합니다.",
+    dailyWork:["09:00 출근, 이메일/슬랙 확인","10:00 팀 스탠드업 미팅 (15분)","10:30 코드 작성 및 리뷰","12:00 점심 (동료와 기술 이야기)","13:30 기능 개발 집중 시간","16:00 코드 리뷰 & PR 처리","17:30 다음날 계획 정리 후 퇴근"],
+    salary:{entry:"3,500~4,500",mid:"5,000~7,000",senior:"8,000~12,000"}, salarySource:"잡코리아·사람인 2024 IT업종 연봉 통계",
+    trends:[{label:"AI/ML 개발자 수요 급증",direction:"up"},{label:"풀스택 개발자 선호",direction:"up"},{label:"단순 코딩 업무 자동화",direction:"down"},{label:"스타트업 개발자 우대",direction:"up"}],
+    aptitude:[{q:"혼자 깊게 집중하는 걸 좋아하나요?",weight:"높음"},{q:"논리적으로 문제를 분석하는 걸 즐기나요?",weight:"높음"},{q:"오래 앉아서 작업해도 괜찮은가요?",weight:"중간"},{q:"새로운 기술을 계속 배우는 데 거부감 없나요?",weight:"높음"},{q:"팀원과 코드에 대해 토론할 수 있나요?",weight:"중간"}],
+    outlook:{aiReplace:"낮음 - AI는 도구이지 대체제가 아님",overseas:"매우 높음 - 글로벌 수요",freelance:"가능 - 프리랜서 시장 활발",remote:"매우 높음 - IT업계 원격근무 보편화"},
+    subjects:{수학:"알고리즘과 자료구조의 핵심 기초",정보:"프로그래밍 언어와 컴퓨팅 사고력",영어:"개발 문서, 스택오버플로우 읽기 필수",물리:"컴퓨터 구조와 하드웨어 이해"},
+    majors:["컴퓨터공학","소프트웨어학","인공지능학"],
+    path:["고등학교 정보·수학","프로그래밍 독학/동아리","컴퓨터공학과","인턴/프로젝트 경험","주니어 개발자","시니어 개발자/CTO"]},
+  { name:"AI 엔지니어", category:"IT/테크", emoji:"🤖", oneliner:"인공지능 모델을 설계하고 학습시키는 사람",
+    description:"머신러닝, 딥러닝 모델을 개발하고 데이터를 분석하여 AI 서비스를 만듭니다. 자연어처리, 컴퓨터비전 등 다양한 AI 분야에서 활동합니다.",
+    dailyWork:["09:00 모델 학습 결과 확인","10:00 데이터 전처리 및 분석","11:00 논문 스터디/팀 미팅","13:00 모델 실험 설계","14:30 코드 작성 및 실험 실행","16:30 결과 분석 및 문서화","18:00 퇴근"],
+    salary:{entry:"4,000~5,500",mid:"6,000~9,000",senior:"10,000~15,000+"}, salarySource:"AI타임스 2024 AI인재 연봉 리포트",
+    trends:[{label:"생성형 AI 전문가 수요 폭증",direction:"up"},{label:"AI 윤리 전문가 부상",direction:"up"},{label:"기업 AI 도입 가속화",direction:"up"},{label:"자격 요건 석사 이상 선호",direction:"neutral"}],
+    aptitude:[{q:"수학(확률, 통계, 선형대수)에 흥미가 있나요?",weight:"높음"},{q:"대량의 데이터를 다루는 것에 흥미가 있나요?",weight:"높음"},{q:"영어 논문을 읽는 것에 거부감이 없나요?",weight:"높음"},{q:"실험이 실패해도 끈기있게 반복할 수 있나요?",weight:"중간"}],
+    outlook:{aiReplace:"매우 낮음 - AI를 만드는 직업",overseas:"매우 높음 - 전 세계적 인재 부족",freelance:"가능 - 컨설팅 형태",remote:"높음 - 대부분 원격 가능"},
+    subjects:{수학:"확률·통계·선형대수는 AI의 언어",정보:"파이썬 프로그래밍 기초 필수",영어:"최신 AI 논문은 모두 영어",과학:"과학적 실험 설계 방법론"},
+    majors:["인공지능학","컴퓨터공학"],
+    path:["고등학교 수학·정보","파이썬·데이터분석 학습","AI/컴공학과","석사 과정 (권장)","AI 연구원/엔지니어"]},
+  { name:"데이터 분석가", category:"IT/테크", emoji:"📈", oneliner:"데이터에서 의미있는 인사이트를 발견하는 사람",
+    description:"기업의 데이터를 수집·분석하여 비즈니스 의사결정을 돕습니다. 통계 분석, 시각화, 보고서 작성이 핵심 업무입니다.",
+    dailyWork:["09:00 데이터 대시보드 점검","10:00 SQL로 데이터 추출","11:00 분석 결과 시각화","13:00 부서 미팅 (분석 결과 공유)","14:30 A/B 테스트 설계","16:00 보고서 작성","17:30 퇴근"],
+    salary:{entry:"3,200~4,200",mid:"4,500~6,500",senior:"7,000~10,000"}, salarySource:"잡코리아 2024 데이터직군 연봉 조사",
+    trends:[{label:"모든 산업에서 데이터 분석 필요",direction:"up"},{label:"AI 도구로 기초 분석 자동화",direction:"neutral"},{label:"비즈니스 인사이트 능력 중시",direction:"up"}],
+    aptitude:[{q:"숫자와 표를 보는 것이 재미있나요?",weight:"높음"},{q:"패턴을 찾는 것을 좋아하나요?",weight:"높음"},{q:"결과를 남에게 설명하는 것을 잘하나요?",weight:"중간"}],
+    outlook:{aiReplace:"중간 - 기초 분석은 자동화되나 해석은 사람 몫",overseas:"높음",freelance:"가능",remote:"높음"},
+    subjects:{수학:"통계·확률은 데이터 분석의 핵심",정보:"파이썬·SQL 활용",영어:"분석 도구와 문서 해석",사회:"비즈니스 맥락 이해"},
+    majors:["컴퓨터공학","인공지능학"],
+    path:["고등학교 수학·정보","통계/엑셀/파이썬 학습","통계학·컴공학과","데이터 분석 인턴","주니어 분석가"]},
+  { name:"게임 개발자", category:"IT/테크", emoji:"🎮", oneliner:"게임의 세계를 코드로 만드는 사람",
+    description:"게임의 시스템, 물리엔진, AI, 네트워크 등을 프로그래밍합니다. Unity, Unreal Engine 등 게임 엔진을 활용하여 개발합니다.",
+    dailyWork:["10:00 출근 (게임사 유연근무)","10:30 팀 스크럼 미팅","11:00 게임 로직 구현","13:00 점심","14:00 버그 수정 및 테스트","16:00 아트/기획팀과 협업","19:00 퇴근 (출시 전 크런치 주의)"],
+    salary:{entry:"3,000~4,000",mid:"4,500~7,000",senior:"7,000~12,000"}, salarySource:"게임메카 2024 게임업계 연봉 리포트",
+    trends:[{label:"모바일 게임 시장 지속 성장",direction:"up"},{label:"AI NPC/프로시저럴 생성 부상",direction:"up"},{label:"인디게임 시장 확대",direction:"up"},{label:"대형사 구조조정 주기적 발생",direction:"down"}],
+    aptitude:[{q:"게임을 단순히 하는 것 외에 만들기에 관심이 있나요?",weight:"높음"},{q:"수학(벡터, 행렬)에 거부감이 없나요?",weight:"중간"},{q:"마감 압박(크런치)을 견딜 수 있나요?",weight:"중간"}],
+    outlook:{aiReplace:"낮음 - 창의적 설계는 인간 영역",overseas:"높음 - 글로벌 시장",freelance:"가능 - 인디 개발",remote:"중간 - 회사마다 다름"},
+    subjects:{수학:"벡터·행렬·물리 시뮬레이션",정보:"프로그래밍 기초",영어:"게임 엔진 문서 해석",물리:"게임 물리엔진 이해"},
+    majors:["컴퓨터공학","소프트웨어학"],
+    path:["고등학교 수학·정보","Unity/Unreal 독학","게임공학·컴공학과","게임잼/포트폴리오","게임 회사 입사"]},
+  { name:"UI/UX 디자이너", category:"IT/테크", emoji:"🎨", oneliner:"사용자가 편하게 쓸 수 있는 화면을 설계하는 사람",
+    description:"앱과 웹사이트의 사용자 경험을 설계합니다. 사용자 조사, 와이어프레임, 프로토타입 제작, 디자인 시스템 구축이 주요 업무입니다.",
+    dailyWork:["09:30 디자인 리뷰 미팅","10:30 사용자 인터뷰 분석","11:30 와이어프레임 작업","13:00 점심","14:00 Figma로 UI 디자인","16:00 개발팀과 핸드오프 미팅","17:30 퇴근"],
+    salary:{entry:"3,000~4,000",mid:"4,500~6,500",senior:"7,000~10,000"}, salarySource:"리멤버 2024 디자인직군 연봉",
+    trends:[{label:"AI 프로토타이핑 도구 등장",direction:"neutral"},{label:"UX 리서치 중요성 증가",direction:"up"},{label:"디자인 시스템 전문가 수요",direction:"up"}],
+    aptitude:[{q:"예쁜 것보다 '쓰기 편한 것'에 관심이 많나요?",weight:"높음"},{q:"사람들의 행동을 관찰하는 것을 좋아하나요?",weight:"높음"},{q:"수학 못해도 괜찮을까요?",weight:"가능 - 수학 비중 낮음"}],
+    outlook:{aiReplace:"중간 - 기초 디자인은 AI가 하지만 UX 전략은 사람",overseas:"높음",freelance:"매우 가능",remote:"높음"},
+    subjects:{국어:"사용자 니즈 파악과 커뮤니케이션",영어:"디자인 트렌드와 도구 학습",사회:"사용자 심리와 행동 이해",정보:"프로토타입 제작 기초"},
+    majors:["디자인학"],
+    path:["고등학교 미술·정보","Figma/디자인 도구 학습","시각디자인·산업디자인학과","포트폴리오 구축","주니어 디자이너"]},
+  { name:"의사", category:"의료/보건", emoji:"👨‍⚕️", oneliner:"사람의 생명을 살리고 건강을 지키는 사람",
+    description:"환자를 진찰하고, 질병을 진단하며, 치료 계획을 수립합니다. 전문 분야에 따라 내과, 외과, 소아과 등으로 나뉩니다.",
+    dailyWork:["07:00 회진 (입원 환자 확인)","09:00 외래 진료","12:00 점심","13:00 수술/시술","16:00 의료 기록 작성","17:00 학회/연구","당직 시 24시간 근무"],
+    salary:{entry:"5,000~7,000 (전공의)",mid:"10,000~15,000",senior:"15,000~30,000+"}, salarySource:"대한의사협회 2024 의사 보수 현황",
+    trends:[{label:"AI 진단 보조 도구 확산",direction:"up"},{label:"원격진료 확대",direction:"up"},{label:"의대 정원 확대 논의",direction:"neutral"}],
+    aptitude:[{q:"생물·화학에 흥미가 있나요?",weight:"높음"},{q:"사람을 돕는 것에 보람을 느끼나요?",weight:"높음"},{q:"긴 수련 기간(6년+4년)을 견딜 수 있나요?",weight:"높음"},{q:"스트레스 상황에서 침착한가요?",weight:"높음"}],
+    outlook:{aiReplace:"낮음 - AI는 보조 도구",overseas:"가능 - 각국 면허 별도",freelance:"가능 - 개원",remote:"제한적 - 대면 진료 중심"},
+    subjects:{생물:"인체 구조와 생명 현상의 기초",화학:"약물 반응과 생화학 이해",수학:"의학 통계와 연구 설계",영어:"의학 논문과 최신 지견 학습"},
+    majors:["의학"],
+    path:["고등학교 과학·수학 우수","수능/내신 최상위","의과대학 6년","전공의 4년","전문의"]},
+  { name:"간호사", category:"의료/보건", emoji:"👩‍⚕️", oneliner:"환자 곁에서 직접 케어하는 건강의 파수꾼",
+    description:"환자의 상태를 관찰하고, 의사의 처방에 따라 치료를 수행하며, 환자와 가족에게 건강 교육을 제공합니다.",
+    dailyWork:["07:00 인수인계 (전 근무자)","08:00 환자 활력징후 체크","09:00 투약 및 처치","12:00 점심","13:00 환자 관찰 및 기록","15:00 보호자 상담","16:00 퇴근 (3교대)"],
+    salary:{entry:"3,200~3,800",mid:"4,000~5,500",senior:"5,500~7,000"}, salarySource:"대한간호협회 2024 간호사 처우 현황",
+    trends:[{label:"만성적 간호 인력 부족",direction:"up"},{label:"전문간호사 역할 확대",direction:"up"},{label:"해외 취업 기회 증가",direction:"up"}],
+    aptitude:[{q:"사람을 돌보는 것에 보람을 느끼나요?",weight:"높음"},{q:"교대근무에 적응할 수 있나요?",weight:"높음"},{q:"긴급 상황에서 빠르게 판단할 수 있나요?",weight:"높음"}],
+    outlook:{aiReplace:"매우 낮음 - 대면 케어 필수",overseas:"매우 높음 - 전 세계 수요",freelance:"가능 - 간호 파견",remote:"불가 - 현장 근무"},
+    subjects:{생물:"인체 구조와 기능 이해 필수",화학:"약물과 체내 반응 이해",영어:"의학 용어와 해외 취업",국어:"환자·보호자 소통 능력"},
+    majors:["간호학"],
+    path:["고등학교 과학 중심","간호학과 4년","국가고시 합격","신규 간호사","경력 간호사/전문간호사"]},
+  { name:"약사", category:"의료/보건", emoji:"💊", oneliner:"약의 전문가로서 안전한 약물 사용을 돕는 사람",
+    description:"처방전을 검토하고 약을 조제하며, 환자에게 약물 복용법을 안내합니다. 약물 상호작용 확인과 건강 상담도 합니다.",
+    dailyWork:["09:00 약국 오픈, 처방전 확인","10:00 조제 및 복약 지도","12:00 점심","13:00 오후 조제 업무","15:00 건강 상담","17:00 재고 관리","18:00 마감"],
+    salary:{entry:"5,000~6,000",mid:"6,000~8,000",senior:"8,000~12,000 (개원 시)"}, salarySource:"대한약사회 2024 약사 보수 현황",
+    trends:[{label:"고령화로 약물 관리 수요 증가",direction:"up"},{label:"바이오의약품 분야 성장",direction:"up"}],
+    aptitude:[{q:"화학에 흥미가 있나요?",weight:"높음"},{q:"꼼꼼하고 정확한 성격인가요?",weight:"높음"},{q:"사람들에게 건강 정보를 설명하는 것을 좋아하나요?",weight:"중간"}],
+    outlook:{aiReplace:"낮음 - 약물 상담은 대면 필수",overseas:"가능 - 각국 면허",freelance:"가능 - 개원",remote:"불가 - 대면"},
+    subjects:{화학:"약물의 화학 구조와 반응",생물:"약물의 체내 작용 이해",수학:"약물 용량 계산",영어:"약학 논문 해석"},
+    majors:["약학"],
+    path:["고등학교 화학·생물 우수","약학대학 6년","약사 국가고시","병원약사/약국 개원"]},
+  { name:"물리치료사", category:"의료/보건", emoji:"🦴", oneliner:"몸의 움직임을 되찾도록 돕는 재활 전문가",
+    description:"근골격계·신경계 질환자의 운동 능력 회복을 돕습니다. 운동치료, 도수치료, 전기치료 등을 시행합니다.",
+    dailyWork:["09:00 환자 스케줄 확인","09:30 운동치료 시행","12:00 점심","13:00 도수치료","15:00 재활 운동 프로그램 작성","17:00 치료 기록 작성","18:00 퇴근"],
+    salary:{entry:"2,800~3,500",mid:"3,500~5,000",senior:"5,000~8,000 (개원 시)"}, salarySource:"대한물리치료사협회 2024",
+    trends:[{label:"고령화로 재활 수요 급증",direction:"up"},{label:"스포츠 재활 분야 성장",direction:"up"},{label:"1인 도수치료 센터 증가",direction:"up"}],
+    aptitude:[{q:"운동이나 신체 활동에 관심이 많나요?",weight:"높음"},{q:"사람의 몸 구조에 흥미가 있나요?",weight:"높음"},{q:"체력이 좋은 편인가요?",weight:"중간"}],
+    outlook:{aiReplace:"매우 낮음 - 대면 치료 필수",overseas:"높음",freelance:"가능 - 개원",remote:"불가"},
+    subjects:{생물:"근골격·신경계 구조 이해",체육:"운동 역학과 신체 이해",물리:"전기치료·초음파 원리",화학:"약물 보조 이해"},
+    majors:["물리치료학"],
+    path:["고등학교 생물·체육","물리치료학과 4년","국가고시 합격","병원 물리치료사","전문치료사/개원"]},
+  { name:"교사", category:"교육/공공", emoji:"👨‍🏫", oneliner:"다음 세대를 키우는 지식의 안내자",
+    description:"학생들에게 교과 지식을 가르치고, 인성 교육과 진로 지도를 합니다. 수업 설계, 평가, 학급 운영이 주요 업무입니다.",
+    dailyWork:["08:00 출근, 조회","09:00 1~4교시 수업","12:00 점심 (학생 지도)","13:00 5~6교시 수업","15:00 학급 운영 업무","16:00 수업 준비/채점","17:00 퇴근 (야자 감독 시 연장)"],
+    salary:{entry:"3,200~3,500 (9급 호봉)",mid:"4,500~5,500",senior:"6,000~7,500"}, salarySource:"교육부 2024 교원 보수 기준",
+    trends:[{label:"AI 활용 교육 확대",direction:"up"},{label:"학생 수 감소로 임용 경쟁 심화",direction:"down"},{label:"교권 보호 제도 강화",direction:"up"}],
+    aptitude:[{q:"설명하고 가르치는 것을 좋아하나요?",weight:"높음"},{q:"학생들과 소통하는 것이 즐거운가요?",weight:"높음"},{q:"인내심이 있나요?",weight:"높음"},{q:"안정적인 직업을 원하나요?",weight:"중간"}],
+    outlook:{aiReplace:"낮음 - 인성교육·상담은 인간 영역",overseas:"가능 - 국제학교",freelance:"가능 - 학원/과외",remote:"제한적 - 대면 수업 중심"},
+    subjects:{국어:"교수법과 학생 소통의 기초",영어:"국제적 교육 트렌드 파악",사회:"교육 정책과 제도 이해",수학:"논리적 사고 훈련"},
+    majors:["교육학"],
+    path:["고등학교 전 과목 고른 성적","사범대/교직이수","임용고시 합격","교사 발령"]},
+  { name:"경찰관", category:"교육/공공", emoji:"👮", oneliner:"시민의 안전과 사회 질서를 지키는 사람",
+    description:"범죄 예방, 수사, 교통 관리, 치안 유지 등 시민의 안전을 책임집니다.",
+    dailyWork:["09:00 근무 시작, 브리핑","10:00 관할 지역 순찰","12:00 점심","13:00 민원 처리/사건 접수","15:00 수사 업무","17:00 보고서 작성","18:00 퇴근 (교대근무)"],
+    salary:{entry:"3,000~3,500",mid:"4,000~5,000",senior:"5,000~7,000"}, salarySource:"경찰청 2024 경찰 보수 규정",
+    trends:[{label:"사이버범죄 수사 인력 수요",direction:"up"},{label:"과학수사 기술 고도화",direction:"up"}],
+    aptitude:[{q:"정의감이 강한가요?",weight:"높음"},{q:"체력이 좋은 편인가요?",weight:"높음"},{q:"위험한 상황에서도 침착할 수 있나요?",weight:"높음"}],
+    outlook:{aiReplace:"낮음 - 현장 대응 필수",overseas:"제한적 - 국가 공무원",freelance:"불가",remote:"불가"},
+    subjects:{사회:"법과 사회 질서 이해",체육:"체력 시험 필수",영어:"외국인 민원·국제 범죄",국어:"보고서·조서 작성 능력"},
+    majors:["경찰행정학","행정학"],
+    path:["고등학교 체육·사회","경찰대/순경 공채","경찰학교 교육","순경 배치","경위 승진"]},
+  { name:"심리상담사", category:"교육/공공", emoji:"🧠", oneliner:"마음의 어려움을 함께 풀어가는 전문가",
+    description:"심리적 어려움을 겪는 내담자와 상담하고, 심리 검사를 실시하며, 치료 계획을 수립합니다.",
+    dailyWork:["09:00 상담 일정 확인","10:00 개인 상담 (50분×3)","12:00 점심","13:00 심리 검사 실시","15:00 집단 상담","16:30 상담 기록 작성","18:00 퇴근"],
+    salary:{entry:"2,500~3,200",mid:"3,500~5,000",senior:"5,000~8,000 (개원 시)"}, salarySource:"한국심리학회 2024",
+    trends:[{label:"정신건강 인식 향상으로 수요 급증",direction:"up"},{label:"학교 상담사 확충",direction:"up"},{label:"온라인 상담 플랫폼 성장",direction:"up"}],
+    aptitude:[{q:"다른 사람의 이야기를 잘 들어주나요?",weight:"높음"},{q:"감정에 공감하는 능력이 있나요?",weight:"높음"},{q:"자기 자신의 감정도 잘 관리하나요?",weight:"높음"}],
+    outlook:{aiReplace:"낮음 - 인간적 공감 필수",overseas:"가능 - 언어 능력 필요",freelance:"가능 - 개원",remote:"가능 - 온라인 상담"},
+    subjects:{생물:"뇌과학과 인간 행동 이해",사회:"사회심리학 기초",국어:"상담 대화 기술",영어:"심리학 원서 학습"},
+    majors:["심리학"],
+    path:["고등학교 사회·생물","심리학과","대학원 (상담심리)","수련 과정","전문상담사 자격"]},
+  { name:"공무원", category:"교육/공공", emoji:"🏢", oneliner:"국가와 지역사회를 위해 일하는 공직자",
+    description:"정부 부처나 지방자치단체에서 행정 업무를 수행합니다. 정책 기획, 민원 처리, 예산 관리 등이 주요 업무입니다.",
+    dailyWork:["09:00 출근, 이메일 확인","10:00 정책 보고서 작성","11:00 부서 회의","12:00 점심","13:00 민원 처리","15:00 예산 검토","18:00 퇴근"],
+    salary:{entry:"2,800~3,200 (9급)",mid:"4,000~5,000 (7급)",senior:"5,500~7,000 (5급)"}, salarySource:"인사혁신처 2024 공무원 보수",
+    trends:[{label:"디지털 정부 전환 가속",direction:"up"},{label:"공채 축소, 경력채용 확대",direction:"neutral"}],
+    aptitude:[{q:"안정적인 직장을 중시하나요?",weight:"높음"},{q:"규칙과 절차를 잘 따르나요?",weight:"중간"},{q:"공공의 이익에 관심이 있나요?",weight:"높음"}],
+    outlook:{aiReplace:"중간 - 단순 행정은 자동화",overseas:"제한적",freelance:"불가",remote:"제한적 - 확대 중"},
+    subjects:{사회:"행정·법·경제 기초 지식",국어:"문서 작성·독해 능력",영어:"TOEIC 가산점",수학:"예산·통계 분석"},
+    majors:["행정학"],
+    path:["고등학교 전 과목 균형","행정학·법학·경제학과","공무원 시험 합격","신규 임용"]},
+  { name:"회계사", category:"경영/금융", emoji:"🧮", oneliner:"기업의 돈 흐름을 정확하게 기록하고 검증하는 사람",
+    description:"기업의 재무제표를 감사하고, 세무 자문, 경영 컨설팅을 제공합니다. 공인회계사 자격이 필요합니다.",
+    dailyWork:["09:00 감사 현장 도착","09:30 장부 검토·분석","12:00 점심","13:00 담당자 인터뷰","15:00 감사 보고서 작성","18:00 퇴근 (시즌에는 야근)"],
+    salary:{entry:"4,500~5,500",mid:"6,000~9,000",senior:"10,000~20,000+"}, salarySource:"한국공인회계사회 2024",
+    trends:[{label:"AI 회계 자동화 도구 등장",direction:"neutral"},{label:"ESG 관련 감사 수요 증가",direction:"up"}],
+    aptitude:[{q:"숫자를 다루는 것이 편한가요?",weight:"높음"},{q:"꼼꼼하고 정확한 성격인가요?",weight:"높음"},{q:"시험 공부(CPA)를 오래 할 수 있나요?",weight:"높음"}],
+    outlook:{aiReplace:"중간 - 단순 기장은 자동화, 감사·자문은 유지",overseas:"높음 - 빅4 글로벌",freelance:"가능 - 개업",remote:"중간"},
+    subjects:{수학:"재무 계산과 통계 분석",사회:"경제·법률 기초",영어:"국제회계기준(IFRS) 학습",국어:"감사 보고서 작성"},
+    majors:["회계학","경영학"],
+    path:["고등학교 수학·사회","경영학·회계학과","CPA 시험 합격","회계법인 근무","파트너/개업"]},
+  { name:"금융 분석가", category:"경영/금융", emoji:"💹", oneliner:"시장을 분석하고 투자 전략을 제시하는 사람",
+    description:"금융 시장과 기업의 재무 데이터를 분석하여 투자 의사결정을 지원합니다.",
+    dailyWork:["08:00 시장 동향 분석","09:30 리서치 보고서 작성","11:00 애널리스트 미팅","12:00 점심","13:00 기업 탐방/실적 분석","15:30 투자 전략 회의","18:00 퇴근"],
+    salary:{entry:"4,000~5,000",mid:"6,000~10,000",senior:"10,000~20,000+"}, salarySource:"금융투자협회 2024 보수 현황",
+    trends:[{label:"퀀트/알고리즘 트레이딩 확대",direction:"up"},{label:"AI 기반 리서치 도구 보급",direction:"up"}],
+    aptitude:[{q:"경제 뉴스에 관심이 많나요?",weight:"높음"},{q:"숫자와 그래프 분석을 좋아하나요?",weight:"높음"},{q:"빠른 의사결정이 가능한가요?",weight:"중간"}],
+    outlook:{aiReplace:"중간 - AI 도구 활용 능력이 핵심",overseas:"높음",freelance:"가능 - 독립 애널리스트",remote:"중간"},
+    subjects:{수학:"확률·통계와 금융 수학",사회:"경제 원리와 시장 구조",영어:"글로벌 금융 시장 분석",정보:"데이터 분석 도구 활용"},
+    majors:["경영학","금융학"],
+    path:["고등학교 수학·사회","경영학·경제학·금융학과","CFA 자격 취득","증권사/자산운용사","시니어 애널리스트"]},
+  { name:"마케팅 전문가", category:"경영/금융", emoji:"📢", oneliner:"제품과 브랜드의 가치를 알리는 사람",
+    description:"시장 조사, 브랜드 전략 수립, 광고 기획, 디지털 마케팅 등을 통해 매출 성장을 이끕니다.",
+    dailyWork:["09:00 마케팅 지표 확인","10:00 캠페인 기획 회의","11:00 콘텐츠 제작 관리","12:00 점심","13:00 광고 성과 분석","15:00 외부 미팅 (에이전시)","17:00 보고서 작성","18:00 퇴근"],
+    salary:{entry:"3,000~3,800",mid:"4,500~6,500",senior:"7,000~12,000"}, salarySource:"사람인 2024 마케팅 직군 연봉",
+    trends:[{label:"퍼포먼스 마케팅 전문가 수요",direction:"up"},{label:"AI 활용 마케팅 자동화",direction:"up"},{label:"숏폼 콘텐츠 마케팅 부상",direction:"up"}],
+    aptitude:[{q:"트렌드에 민감한가요?",weight:"높음"},{q:"사람들의 심리가 궁금한가요?",weight:"높음"},{q:"글이나 영상을 만드는 것을 좋아하나요?",weight:"중간"}],
+    outlook:{aiReplace:"중간 - 크리에이티브 전략은 인간 영역",overseas:"높음",freelance:"매우 가능",remote:"높음"},
+    subjects:{사회:"소비자 심리와 시장 구조",국어:"카피라이팅과 스토리텔링",영어:"글로벌 마케팅 트렌드",수학:"데이터 기반 성과 분석"},
+    majors:["경영학"],
+    path:["고등학교 사회·국어","경영학·광고홍보학과","마케팅 인턴","주니어 마케터","브랜드 매니저/CMO"]},
+  { name:"변호사", category:"법/사회", emoji:"⚖️", oneliner:"법으로 사람들의 권리를 지키는 사람",
+    description:"법률 자문, 소송 대리, 계약서 검토 등 법률 서비스를 제공합니다.",
+    dailyWork:["09:00 사건 서류 검토","10:00 의뢰인 상담","11:00 판례 조사","12:00 점심","13:00 법원 출석/변론","15:00 계약서 검토","17:00 서면 작성","19:00 퇴근"],
+    salary:{entry:"5,000~7,000",mid:"8,000~15,000",senior:"15,000~30,000+"}, salarySource:"대한변호사협회 2024",
+    trends:[{label:"리걸테크/AI 법률 서비스 성장",direction:"up"},{label:"변호사 수 증가로 경쟁 심화",direction:"down"},{label:"IT·AI 전문 변호사 수요",direction:"up"}],
+    aptitude:[{q:"글을 읽고 논리를 분석하는 것을 좋아하나요?",weight:"높음"},{q:"논쟁에서 근거를 갖고 설득할 수 있나요?",weight:"높음"},{q:"정의로운 것에 대한 관심이 있나요?",weight:"중간"}],
+    outlook:{aiReplace:"중간 - 단순 법률 검색은 AI, 전략 수립은 인간",overseas:"가능 - 국제법 분야",freelance:"가능 - 개업",remote:"가능 - 자문 업무"},
+    subjects:{사회:"법과 사회 제도의 기초",국어:"논증적 글쓰기와 독해력",영어:"국제법·영문 계약서",수학:"논리적 사고 훈련"},
+    majors:["법학"],
+    path:["고등학교 사회·국어","법학과/로스쿨","변호사 시험 합격","법률사무소 근무","파트너/개업"]},
+  { name:"환경공학자", category:"법/사회", emoji:"🌱", oneliner:"지구 환경을 지키는 기술 전문가",
+    description:"대기·수질·토양 오염을 분석하고 해결책을 설계합니다. 환경영향평가, 폐기물 처리 시스템 설계 등을 합니다.",
+    dailyWork:["09:00 현장 환경 모니터링","10:00 데이터 분석","11:00 보고서 작성","12:00 점심","13:00 환경영향평가 검토","15:00 설계 업무","17:00 관련 기관 미팅","18:00 퇴근"],
+    salary:{entry:"3,000~3,800",mid:"4,000~6,000",senior:"6,000~9,000"}, salarySource:"한국환경공학회 2024",
+    trends:[{label:"탄소중립 정책으로 수요 급증",direction:"up"},{label:"ESG 경영 확산",direction:"up"},{label:"기후변화 대응 기술 발전",direction:"up"}],
+    aptitude:[{q:"환경 문제에 관심이 많나요?",weight:"높음"},{q:"과학 실험과 현장 조사를 좋아하나요?",weight:"높음"},{q:"공학적 문제 해결에 관심이 있나요?",weight:"중간"}],
+    outlook:{aiReplace:"낮음 - 현장 조사와 전문 판단 필수",overseas:"높음 - 글로벌 환경 이슈",freelance:"가능 - 환경 컨설팅",remote:"부분 가능"},
+    subjects:{과학:"환경 과학의 기초",화학:"오염물질 분석",수학:"공학 계산과 모델링",사회:"환경 정책과 법규"},
+    majors:["환경공학"],
+    path:["고등학교 과학·수학","환경공학과","환경기사 자격","환경부/환경 기업","전문 환경 컨설턴트"]},
+  { name:"건축가", category:"크리에이티브", emoji:"🏛️", oneliner:"공간을 설계하여 사람들의 삶을 디자인하는 사람",
+    description:"건물의 설계, 인테리어, 도시 계획 등을 담당합니다. 미적 감각과 공학적 지식을 결합합니다.",
+    dailyWork:["09:00 설계 작업 (CAD/BIM)","10:30 클라이언트 미팅","12:00 점심","13:00 현장 답사","15:00 구조/설비 팀 협업","17:00 도면 수정","19:00 퇴근"],
+    salary:{entry:"2,800~3,500",mid:"4,000~6,000",senior:"7,000~15,000 (유명 건축사)"}, salarySource:"대한건축사협회 2024",
+    trends:[{label:"친환경/그린 빌딩 설계 수요",direction:"up"},{label:"AI 보조 설계 도구 발전",direction:"up"},{label:"리모델링 시장 성장",direction:"up"}],
+    aptitude:[{q:"공간을 상상하고 스케치하는 것을 좋아하나요?",weight:"높음"},{q:"미술과 수학 모두에 관심이 있나요?",weight:"높음"},{q:"긴 프로젝트(수년)를 참을성 있게 할 수 있나요?",weight:"중간"}],
+    outlook:{aiReplace:"낮음 - 창의적 설계는 인간 영역",overseas:"높음",freelance:"가능 - 개업",remote:"부분 가능"},
+    subjects:{수학:"구조 역학과 공간 계산",물리:"건축 구조와 재료 역학",국어:"설계 의도 표현과 소통",영어:"글로벌 건축 트렌드"},
+    majors:["건축학"],
+    path:["고등학교 수학·미술","건축학과 5년","건축사 자격","설계사무소","독립 건축사"]},
+  { name:"유튜버/크리에이터", category:"크리에이티브", emoji:"📹", oneliner:"콘텐츠로 세상과 소통하는 1인 미디어 전문가",
+    description:"영상 콘텐츠를 기획·촬영·편집하여 유튜브 등 플랫폼에 게시합니다. 브랜드 협업, 광고 수익 등으로 수입을 얻습니다.",
+    dailyWork:["10:00 댓글·DM 확인","11:00 콘텐츠 아이디어 기획","13:00 점심","14:00 촬영","16:00 편집 작업","19:00 썸네일 제작·업로드","20:00 마무리"],
+    salary:{entry:"불안정 (0~2,000)",mid:"3,000~8,000",senior:"10,000~수억 (상위 크리에이터)"}, salarySource:"한국콘텐츠진흥원 2024",
+    trends:[{label:"숏폼 콘텐츠 시장 급성장",direction:"up"},{label:"기업 협찬/브랜디드 콘텐츠 증가",direction:"up"},{label:"크리에이터 수 포화",direction:"down"}],
+    aptitude:[{q:"남들 앞에 나서는 것이 즐거운가요?",weight:"높음"},{q:"영상 촬영·편집에 관심이 있나요?",weight:"높음"},{q:"꾸준히 콘텐츠를 만들 수 있나요?",weight:"높음"},{q:"불안정한 수입을 감수할 수 있나요?",weight:"중간"}],
+    outlook:{aiReplace:"낮음 - 개인 매력과 창의성이 핵심",overseas:"높음 - 글로벌 플랫폼",freelance:"기본 - 프리랜서 직업",remote:"완전 가능"},
+    subjects:{국어:"스토리텔링과 대본 작성",영어:"글로벌 콘텐츠와 협업",정보:"영상 편집 도구 활용",사회:"트렌드와 미디어 리터러시"},
+    majors:["미디어학"],
+    path:["고등학교 - 콘텐츠 제작 시작","채널 개설·꾸준한 업로드","구독자 성장·수익화","전업 크리에이터/MCN 소속"]},
+];
+
+// ═══════════════════════════════════════
+// 상태 관리
+// ═══════════════════════════════════════
+let currentPage = { type: "dashboard" };
+let dashboardFilter = "전체";
+let dashboardSearch = "";
+let detailTab = "info";
+
+function navigate(type, data) {
+  if (type === "dashboard") currentPage = { type: "dashboard" };
+  else if (type === "detail") { currentPage = { type: "detail", job: data }; detailTab = "info"; }
+  else if (type === "subject") currentPage = { type: "subject", selected: data || "수학" };
+  else if (type === "major") currentPage = { type: "major", selected: data || Object.keys(MAJORS)[0] };
+  else if (type === "path") currentPage = { type: "path", selected: data || null };
+  render();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+// ═══════════════════════════════════════
+// 렌더링
+// ═══════════════════════════════════════
+function render() {
+  renderNav();
+  const app = document.getElementById("app");
+  if (currentPage.type === "dashboard") app.innerHTML = renderDashboard();
+  else if (currentPage.type === "detail") app.innerHTML = renderDetail();
+  else if (currentPage.type === "subject") app.innerHTML = renderSubjectPage();
+  else if (currentPage.type === "major") app.innerHTML = renderMajorPage();
+  else if (currentPage.type === "path") app.innerHTML = renderPathPage();
+  app.className = "fade-in";
+  bindEvents();
+}
+
+function renderNav() {
+  const tabs = [
+    { id:"dashboard", label:"대시보드", icon:"🧭" },
+    { id:"subject", label:"과목 연결", icon:"📐" },
+    { id:"major", label:"전공 탐색", icon:"🎓" },
+    { id:"path", label:"경로 탐색", icon:"🗺️" },
+  ];
+  document.getElementById("navTabs").innerHTML = tabs.map(t =>
+    `<button class="nav-tab ${currentPage.type===t.id?'active':''}" onclick="navigate('${t.id}')">
+      <span style="font-size:15px">${t.icon}</span><span>${t.label}</span>
+    </button>`
+  ).join("");
+}
+
+// ── 대시보드 ──
+function renderDashboard() {
+  const cats = ["전체", ...Object.keys(CATEGORIES)];
+  const filtered = JOBS.filter(j => {
+    if (dashboardFilter !== "전체" && j.category !== dashboardFilter) return false;
+    if (dashboardSearch && !j.name.includes(dashboardSearch) && !j.oneliner.includes(dashboardSearch) && !j.category.includes(dashboardSearch)) return false;
+    return true;
+  });
+  return `
+    <div class="container">
+      <div style="text-align:center;margin-bottom:32px">
+        <h1 class="page-title">어떤 직업이 나를 기다리고 있을까?</h1>
+        <p class="page-subtitle">20개 직업을 탐색하고, 공부와 미래를 연결해 보세요</p>
+      </div>
+      <div style="display:flex;justify-content:center;margin-bottom:20px">
+        <input class="search-box" id="searchBox" value="${dashboardSearch}" placeholder="직업 이름, 키워드로 검색..." />
+      </div>
+      <div class="filter-group">
+        ${cats.map(c => {
+          const isActive = dashboardFilter === c;
+          const bg = isActive ? (c==="전체" ? "linear-gradient(135deg,#60a5fa,#a78bfa)" : CATEGORIES[c].color) : "transparent";
+          return `<button class="filter-btn ${isActive?'active':''}" style="background:${bg}${isActive?';color:#fff':''}" onclick="setFilter('${c}')">${c!=="전체"?CATEGORIES[c].icon+" ":""}${c}</button>`;
+        }).join("")}
+      </div>
+      <div class="card-grid">
+        ${filtered.map(j => {
+          const cat = CATEGORIES[j.category];
+          return `
+          <div class="job-card" onclick="navigate('detail','${j.name}')" onmouseenter="this.style.boxShadow='0 12px 32px ${cat.color}22';this.style.borderColor='${cat.color}44'" onmouseleave="this.style.boxShadow='none';this.style.borderColor='rgba(255,255,255,0.06)'">
+            <div class="job-card-header">
+              <div class="job-card-icon" style="background:${cat.color}22">${j.emoji}</div>
+              <div>
+                <div class="job-card-name">${j.name}</div>
+                <div class="job-card-cat" style="color:${cat.color}">${cat.icon} ${j.category}</div>
+              </div>
+            </div>
+            <div class="job-card-desc">${j.oneliner}</div>
+            <div class="job-card-tags">
+              ${Object.keys(j.subjects).slice(0,3).map(s => `<span class="job-card-tag">${s}</span>`).join("")}
+            </div>
+            <div class="job-card-salary">💰 ${j.salary.entry}만</div>
+          </div>`;
+        }).join("")}
+      </div>
+      ${filtered.length === 0 ? '<div style="text-align:center;padding:48px;color:#64748b">검색 결과가 없습니다</div>' : ''}
+    </div>`;
+}
+
+// ── 직업 상세 ──
+function renderDetail() {
+  const job = JOBS.find(j => j.name === currentPage.job);
+  if (!job) return '<div style="padding:48px;text-align:center;color:#94a3b8">직업을 찾을 수 없습니다</div>';
+  const cat = CATEGORIES[job.category];
+  const tabs = [{id:"info",label:"기본 정보"},{id:"salary",label:"연봉·트렌드"},{id:"aptitude",label:"적성·성향"},{id:"outlook",label:"미래 전망"},{id:"connect",label:"과목·전공 연결"}];
+
+  let content = "";
+  if (detailTab === "info") {
+    content = `
+      <h3 class="section-title">실제 하는 일</h3>
+      <p style="color:#cbd5e1;font-size:14px;line-height:1.7;margin-bottom:24px">${job.description}</p>
+      <h3 class="section-title">📅 하루 업무 예시</h3>
+      ${job.dailyWork.map((item,i) => `
+        <div class="daily-item"><div class="daily-dot" style="background:${cat.color}"></div><span style="color:#cbd5e1;font-size:13px">${item}</span></div>
+      `).join("")}`;
+  } else if (detailTab === "salary") {
+    content = `
+      <h3 class="section-title">💰 연봉 정보 (만원)</h3>
+      <div class="salary-grid">
+        <div class="salary-box" style="background:#60a5fa11;border:1px solid #60a5fa22"><div class="salary-label">초봉</div><div class="salary-value" style="color:#60a5fa">${job.salary.entry}</div></div>
+        <div class="salary-box" style="background:#a78bfa11;border:1px solid #a78bfa22"><div class="salary-label">5년차</div><div class="salary-value" style="color:#a78bfa">${job.salary.mid}</div></div>
+        <div class="salary-box" style="background:#f472b611;border:1px solid #f472b622"><div class="salary-label">10년차+</div><div class="salary-value" style="color:#f472b6">${job.salary.senior}</div></div>
+      </div>
+      <div style="color:#64748b;font-size:11px;margin-bottom:24px">※ 출처: ${job.salarySource}</div>
+      <h3 class="section-title">📊 최근 채용 트렌드</h3>
+      ${job.trends.map(t => `
+        <div class="trend-item">
+          <span class="trend-label">${t.label}</span>
+          <span class="trend-icon">${t.direction==="up"?"📈":t.direction==="down"?"📉":"➡️"}</span>
+        </div>`).join("")}`;
+  } else if (detailTab === "aptitude") {
+    content = `
+      <h3 class="section-title">🎯 적성 체크리스트</h3>
+      <p style="color:#94a3b8;font-size:13px;margin-bottom:16px">나와 맞는 직업인지 스스로 체크해 보세요</p>
+      ${job.aptitude.map(a => `
+        <div class="apt-item">
+          <span class="apt-weight ${a.weight==="높음"?"apt-weight-high":a.weight==="중간"?"apt-weight-mid":"apt-weight-low"}">${a.weight}</span>
+          <span class="apt-text">${a.q}</span>
+        </div>`).join("")}`;
+  } else if (detailTab === "outlook") {
+    content = `
+      <h3 class="section-title">🔮 향후 전망</h3>
+      ${[{icon:"🤖",label:"AI 대체 가능성",value:job.outlook.aiReplace},
+         {icon:"🌏",label:"해외 취업",value:job.outlook.overseas},
+         {icon:"💼",label:"프리랜서 가능",value:job.outlook.freelance},
+         {icon:"🏠",label:"원격근무",value:job.outlook.remote}
+      ].map(o => `
+        <div class="outlook-item">
+          <div class="outlook-head"><span class="outlook-icon">${o.icon}</span><span class="outlook-label">${o.label}</span></div>
+          <div class="outlook-value">${o.value}</div>
+        </div>`).join("")}`;
+  } else if (detailTab === "connect") {
+    content = `
+      <h3 class="section-title">📚 고등학교 과목 연결</h3>
+      ${Object.entries(job.subjects).map(([s,r]) => {
+        const subj = SUBJECTS[s] || {icon:"📖",color:"#6366f1"};
+        return `<div class="subj-item" style="background:${subj.color}11;border:1px solid ${subj.color}22" onclick="navigate('subject','${s}')">
+          <span class="subj-icon">${subj.icon}</span>
+          <div><div class="subj-name" style="color:${subj.color}">${s}</div><div class="subj-reason">${r}</div></div>
+        </div>`;
+      }).join("")}
+      <h3 class="section-title" style="margin-top:28px">🎓 관련 대학 전공</h3>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:28px">
+        ${(job.majors||[]).map(m => `<button class="major-btn" style="background:${cat.color}22;border:1px solid ${cat.color}44;color:${cat.color}" onclick="navigate('major','${m}')">${m}</button>`).join("")}
+      </div>
+      <h3 class="section-title">🛤️ 진로 경로</h3>
+      ${(job.path||[]).map((step,i) => `
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <div class="step-num" style="background:${cat.color}">${i+1}</div>
+            ${i < job.path.length-1 ? `<div class="step-line" style="background:${cat.color}44"></div>` : ''}
+          </div>
+          <div style="color:#cbd5e1;font-size:14px;padding-top:4px">${step}</div>
+        </div>`).join("")}`;
+  }
+
+  return `
+    <div class="container-sm">
+      <button class="back-btn" onclick="navigate('dashboard')">← 목록으로</button>
+      <div class="detail-header" style="background:linear-gradient(135deg,${cat.color}22,${cat.color}08);border:1px solid ${cat.color}33">
+        <div class="detail-header-row">
+          <div class="detail-icon" style="background:${cat.color}33">${job.emoji}</div>
+          <div>
+            <h2 class="detail-title">${job.name}</h2>
+            <div class="detail-cat" style="color:${cat.color}">${cat.icon} ${job.category}</div>
+          </div>
+        </div>
+        <p class="detail-oneliner">${job.oneliner}</p>
+      </div>
+      <div class="tab-group">
+        ${tabs.map(t => `<button class="tab-btn ${detailTab===t.id?'active':''}" style="${detailTab===t.id?'background:'+cat.color:''}" onclick="setDetailTab('${t.id}')">${t.label}</button>`).join("")}
+      </div>
+      <div class="panel">${content}</div>
+    </div>`;
+}
+
+// ── 과목 연결 ──
+function renderSubjectPage() {
+  const active = currentPage.selected || "수학";
+  const subj = SUBJECTS[active];
+  const subjectJobs = JOBS.filter(j => j.subjects && j.subjects[active]);
+
+  return `
+    <div class="container-md">
+      <div style="text-align:center;margin-bottom:28px">
+        <h2 class="page-title" style="font-size:24px">"이 과목, 왜 배우는 거예요?"</h2>
+        <p class="page-subtitle">과목을 선택하면 연결된 직업을 볼 수 있어요</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:28px">
+        ${Object.entries(SUBJECTS).map(([name,info]) =>
+          `<button class="subj-page-btn" style="background:${active===name?info.color:'rgba(255,255,255,0.05)'};color:${active===name?'#fff':'#94a3b8'}" onclick="navigate('subject','${name}')">
+            <span>${info.icon}</span> ${name}
+          </button>`
+        ).join("")}
+      </div>
+      <div class="subj-page-info" style="background:${subj.color}11;border:1px solid ${subj.color}22">
+        <span style="font-size:40px">${subj.icon}</span>
+        <h3 style="color:${subj.color};font-size:22px;font-weight:800;margin:8px 0 4px">${active}</h3>
+        <p style="color:#94a3b8;font-size:14px">${subj.desc}</p>
+      </div>
+      <h3 class="section-title">${active}이(가) 필요한 직업 (${subjectJobs.length}개)</h3>
+      ${subjectJobs.map(j => {
+        const jCat = CATEGORIES[j.category];
+        return `
+        <div class="subj-job-item" onclick="navigate('detail','${j.name}')">
+          <div style="display:flex;align-items:center;gap:14px">
+            <span style="font-size:28px">${j.emoji}</span>
+            <div>
+              <div style="color:#f1f5f9;font-weight:700;font-size:15px">${j.name}</div>
+              <div style="color:${subj.color};font-size:12px;font-weight:600;margin-top:2px">${active}: ${j.subjects[active]}</div>
+            </div>
+          </div>
+          <div style="color:${jCat.color};font-size:11px;font-weight:600;background:${jCat.color}11;padding:4px 10px;border-radius:6px">${j.category}</div>
+        </div>`;
+      }).join("")}
+    </div>`;
+}
+
+// ── 전공 탐색 ──
+function renderMajorPage() {
+  const majorNames = Object.keys(MAJORS);
+  const active = currentPage.selected || majorNames[0];
+  const major = MAJORS[active];
+
+  return `
+    <div class="container-md">
+      <div style="text-align:center;margin-bottom:28px">
+        <h2 class="page-title" style="font-size:24px">🎓 대학 전공 탐색</h2>
+        <p class="page-subtitle">전공에서 무엇을 배우고, 어떤 직업으로 이어지는지 알아보세요</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:28px">
+        ${majorNames.map(m =>
+          `<button class="major-page-btn" style="border:${active===m?'none':'1px solid rgba(255,255,255,0.1)'};background:${active===m?'#6366f1':'transparent'};color:${active===m?'#fff':'#94a3b8'}" onclick="navigate('major','${m}')">${m}</button>`
+        ).join("")}
+      </div>
+      <div class="major-grid">
+        <div class="panel">
+          <h3 class="section-title" style="margin-top:0">📖 배우는 과목</h3>
+          ${major.subjects.map((s,i) =>
+            `<div class="major-subj-item"><div class="major-subj-num">${i+1}</div><span style="color:#cbd5e1;font-size:14px">${s}</span></div>`
+          ).join("")}
+        </div>
+        <div class="panel">
+          <h3 class="section-title" style="margin-top:0">💼 연결된 직업</h3>
+          ${major.jobs.map(jName => {
+            const j = JOBS.find(job => job.name === jName);
+            if (!j) return '';
+            return `<div class="major-job-item" onclick="navigate('detail','${jName}')">
+              <span style="font-size:24px">${j.emoji}</span>
+              <div>
+                <div style="color:#f1f5f9;font-size:14px;font-weight:700">${j.name}</div>
+                <div style="color:#64748b;font-size:11px">💰 초봉 ${j.salary.entry}만</div>
+              </div>
+            </div>`;
+          }).join("")}
+        </div>
+      </div>
+    </div>`;
+}
+
+// ── 경로 탐색 ──
+function renderPathPage() {
+  const selected = currentPage.selected;
+  const job = JOBS.find(j => j.name === selected);
+
+  let pathContent = '';
+  if (job) {
+    const cat = CATEGORIES[job.category];
+    pathContent = `
+      <div class="panel" style="border-radius:20px;padding:32px;margin-bottom:20px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:0">
+          ${job.path.map((step,i) => {
+            const isLast = i === job.path.length - 1;
+            const isFirst = i === 0;
+            return `
+              <div class="path-step">
+                <div class="path-box" style="background:${isLast?`linear-gradient(135deg,${cat.color},${cat.color}cc)`:isFirst?'rgba(96,165,250,0.15)':'rgba(255,255,255,0.05)'};border:${isLast?`2px solid ${cat.color}`:'1px solid rgba(255,255,255,0.08)'}">
+                  <div style="color:${isLast?'#fff':'#f1f5f9'};font-size:${isLast?'16':'14'}px;font-weight:${isLast?800:600}">${step}</div>
+                </div>
+                ${i < job.path.length-1 ? `<div class="path-arrow"><div class="path-line" style="background:${cat.color}44"></div><span style="color:${cat.color};font-size:16px">▼</span><div style="width:2px;height:4px;background:${cat.color}44"></div></div>` : ''}
+              </div>`;
+          }).join("")}
+        </div>
+      </div>
+      <div class="path-bottom-grid">
+        <div class="panel" style="padding:20px">
+          <h4 style="color:#60a5fa;font-size:14px;font-weight:700;margin:0 0 12px">📚 지금 중요한 과목</h4>
+          ${Object.entries(job.subjects).map(([s,r]) => {
+            const subj = SUBJECTS[s] || {icon:"📖",color:"#6366f1"};
+            return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;cursor:pointer" onclick="navigate('subject','${s}')">
+              <span>${subj.icon}</span>
+              <span style="color:#cbd5e1;font-size:13px"><b style="color:${subj.color}">${s}</b> — ${r}</span>
+            </div>`;
+          }).join("")}
+        </div>
+        <div class="panel" style="padding:20px">
+          <h4 style="color:#a78bfa;font-size:14px;font-weight:700;margin:0 0 12px">🎓 추천 전공</h4>
+          ${(job.majors||[]).map(m => `
+            <div style="padding:8px 12px;background:rgba(167,139,250,0.1);border-radius:8px;margin-bottom:8px;cursor:pointer;color:#cbd5e1;font-size:13px" onclick="navigate('major','${m}')">
+              ${m} → ${MAJORS[m]?.subjects.slice(0,3).join(", ")}...
+            </div>`).join("")}
+        </div>
+      </div>`;
+  } else {
+    pathContent = `<div class="empty-state"><span style="font-size:48px;display:block;margin-bottom:12px">👆</span>위에서 직업을 선택하면 진로 경로를 볼 수 있어요</div>`;
+  }
+
+  return `
+    <div class="container-md">
+      <div style="text-align:center;margin-bottom:28px">
+        <h2 class="page-title" style="font-size:24px">🗺️ 진로 경로 탐색기</h2>
+        <p class="page-subtitle">고등학교 공부 → 대학 전공 → 직업까지의 경로를 확인하세요</p>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:32px">
+        ${JOBS.map(j => `<button class="path-job-btn ${selected===j.name?'active':''}" style="${selected===j.name?'background:'+CATEGORIES[j.category].color+';border:none;color:#fff':''}" onclick="navigate('path','${j.name}')">${j.emoji} ${j.name}</button>`).join("")}
+      </div>
+      ${pathContent}
+    </div>`;
+}
+
+// ═══════════════════════════════════════
+// 이벤트 바인딩
+// ═══════════════════════════════════════
+function bindEvents() {
+  const searchBox = document.getElementById("searchBox");
+  if (searchBox) {
+    searchBox.addEventListener("input", (e) => {
+      dashboardSearch = e.target.value;
+      document.querySelector(".card-grid").outerHTML = renderDashboard().match(/<div class="card-grid">[\s\S]*?<\/div>\s*<\/div>/)?.[0] || '';
+      // 간단히 전체 재렌더
+      const app = document.getElementById("app");
+      app.innerHTML = renderDashboard();
+      bindEvents();
+      document.getElementById("searchBox").focus();
+      document.getElementById("searchBox").setSelectionRange(dashboardSearch.length, dashboardSearch.length);
+    });
+  }
+}
+
+function setFilter(f) {
+  dashboardFilter = f;
+  const app = document.getElementById("app");
+  app.innerHTML = renderDashboard();
+  bindEvents();
+}
+
+function setDetailTab(t) {
+  detailTab = t;
+  const app = document.getElementById("app");
+  app.innerHTML = renderDetail();
+  bindEvents();
+}
+
+// 초기 렌더
+render();
+</script>
+</body>
+</html>

@@ -147,7 +147,19 @@ body{font-family:'Pretendard Variable','Noto Sans KR',sans-serif;background:var(
   @page{margin:1.5cm;size:A4}
 }
 
-@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.header h1{font-size:1.3rem}.db-info{grid-template-columns:1fr}}
+/* 통합 최상단 내비게이션 */
+.super-nav{position:sticky;top:0;z-index:9999;background:linear-gradient(135deg,#060a14 0%,#0d1320 100%);border-bottom:1px solid rgba(255,255,255,0.08);padding:0 16px;backdrop-filter:blur(12px)}
+.super-nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:0;height:46px}
+.super-nav-logo{display:flex;align-items:center;gap:8px;margin-right:28px;cursor:pointer;text-decoration:none}
+.super-nav-logo span:first-child{font-size:22px}
+.super-nav-logo span:last-child{font-weight:800;font-size:16px;background:linear-gradient(90deg,#38bdf8,#818cf8,#f472b6);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.super-nav-links{display:flex;gap:2px}
+.super-nav-link{display:flex;align-items:center;gap:6px;padding:12px 18px;color:#64748b;font-size:13px;font-weight:700;text-decoration:none;border-bottom:2px solid transparent;transition:all .2s;font-family:inherit}
+.super-nav-link:hover{color:#94a3b8}
+.super-nav-link.active{color:#38bdf8;border-bottom-color:#38bdf8;background:rgba(56,189,248,0.05)}
+.super-nav-link .nav-emoji{font-size:15px}
+
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}.header h1{font-size:1.3rem}.db-info{grid-template-columns:1fr}.super-nav-link{padding:12px 10px;font-size:11px}.super-nav-logo{margin-right:12px}.super-nav-logo span:last-child{font-size:13px}}
 
 /* Mode D/E/F - 고1 맞춤 기능 */
 .roadmap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin:10px 0}
@@ -188,6 +200,17 @@ body{font-family:'Pretendard Variable','Noto Sans KR',sans-serif;background:var(
 </style>
 </head>
 <body>
+<nav class="super-nav">
+  <div class="super-nav-inner">
+    <a class="super-nav-logo" href="index.html">
+      <span>🧭</span><span>나침반</span>
+    </a>
+    <div class="super-nav-links">
+      <a class="super-nav-link active" href="index.html"><span class="nav-emoji">🎓</span> 입시 나침반</a>
+      <a class="super-nav-link" href="career.html"><span class="nav-emoji">💼</span> 직업 나침반</a>
+    </div>
+  </div>
+</nav>
 <div class="app" id="app"></div>
 <script>
 // ===== DB (localStorage 우선, 없으면 내장 DB) =====
@@ -283,7 +306,7 @@ const MAJORS=[
 const FC={'의약':{bg:'rgba(248,113,113,.1)',c:'#f87171'},'공학':{bg:'rgba(56,189,248,.1)',c:'#38bdf8'},'자연':{bg:'rgba(52,211,153,.1)',c:'#34d399'},'인문사회':{bg:'rgba(251,191,36,.1)',c:'#fbbf24'},'교육':{bg:'rgba(244,114,182,.1)',c:'#f472b6'},'예체능':{bg:'rgba(167,139,250,.1)',c:'#a78bfa'}};
 const SKIP=['기회균형','농어촌','특수교육','재직자','특성화고','저소득','사회통합','사회배려','기초생활','장애인','서해5도','만학도','대안학교','목회자','교육기회','사회기여','기회균등','고른기회','국가보훈','평생학습','성인학습','사회공헌'];
 
-let mode='A',selSub=new Set(),selMaj=null,regF='전체',openP=new Set(),sTxt='',dbLog=[],myGrade=0;
+let mode=location.pathname.startsWith('/career')?'K':'A',selSub=new Set(),selMaj=null,regF='전체',openP=new Set(),sTxt='',dbLog=[],myGrade=0;
 
 // D: 내신 로드맵
 const SEMESTERS=['1-1','1-2','2-1','2-2','3-1'];
@@ -306,6 +329,71 @@ function loadProfile(id){try{return JSON.parse(localStorage.getItem('profile_'+i
 function saveProfile(id,data){localStorage.setItem('profile_'+id,JSON.stringify(data))}
 function profileLogout(){profileUser=null;profileData=null;profileMode='login';render()}
 
+function escHtml(v){return String(v||'').replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function normText(v){return String(v||'').toLowerCase().replace(/\s|학과|학부|전공|대학|과$/g,'')}
+function careerJobs(m){return (m.career||'').split(',').map(x=>x.trim()).filter(Boolean)}
+function careerGroup(m){
+  const map={
+    '의약':'보건·의료 전문직군','공학':'공학·기술·개발 직군','자연':'연구·분석·데이터 직군',
+    '인문사회':'기획·정책·비즈니스 직군','교육':'교육·상담·공공 직군','예체능':'콘텐츠·디자인·스포츠 직군'
+  };
+  return map[m.field]||'융합 직군';
+}
+function careerLevelText(type,val){
+  const maps={
+    employRate:{S:'매우 높음',A:'높음',B:'보통',C:'낮음'},
+    salary:{high:'높음',mid:'보통',low:'낮은 편'},
+    prospect:{up:'성장',stable:'안정',down:'감소'}
+  };
+  return (maps[type]&&maps[type][val])||'-';
+}
+function findMajorByDeptName(deptName){
+  const q=normText(deptName);
+  if(!q)return null;
+  return MAJORS.find(m=>{
+    const names=[m.name].concat(m.keywords||[],m.gradeKeys||[]);
+    return names.some(k=>{
+      const nk=normText(k);
+      return nk&&q.includes(nk);
+    });
+  })||null;
+}
+function linkedDeptStats(m){
+  if(!m)return {count:0,univCount:0,totalQ:0,samples:[]};
+  const samples=[],univs=new Set();
+  let count=0,totalQ=0;
+  UNIV_DB.forEach(u=>{
+    (u.pg||[]).forEach(p=>{
+      (p.dept||[]).forEach(d=>{
+        const matched=findMajorByDeptName(d.d);
+        if(matched&&matched.id===m.id){
+          count++;
+          univs.add(u.nm);
+          totalQ+=Number(d.q||0);
+          if(samples.length<8)samples.push({univ:u.nm,prog:p.n,dept:d.d,q:d.q,cr:d.cr});
+        }
+      });
+    });
+  });
+  return {count,univCount:univs.size,totalQ,samples};
+}
+function renderCareerSummary(m,compact){
+  if(!m||!m.career)return '';
+  const jobs=careerJobs(m);
+  return `<div class="strategy" style="${compact?'margin-top:10px':''}">
+    <h3>🧭 직업나침반</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+      <span class="rec-chip">${careerGroup(m)}</span>
+      <span class="rec-chip">취업 ${careerLevelText('employRate',m.employRate)}</span>
+      <span class="rec-chip">초봉 ${careerLevelText('salary',m.salary)}</span>
+      <span class="rec-chip">전망 ${careerLevelText('prospect',m.prospect)}</span>
+    </div>
+    <h4>👔 연결 직업</h4>
+    <div class="chip-grid">${jobs.map(j=>`<span class="chip selected" style="cursor:default">${j}</span>`).join('')}</div>
+    <p>${m.prospectDesc||''}</p>
+    ${compact?`<button class="db-btn primary no-print" onclick="GoK('${m.id}')" style="margin-top:10px">직업·직업군 자세히 보기</button>`:''}
+  </div>`;
+}
 
 function getMatched(){if(!selSub.size)return[];return MAJORS.map(m=>{const mc=m.rec.filter(s=>selSub.has(s)).length;return{...m,mc,mr:mc/m.rec.length}}).filter(m=>m.mc>0).sort((a,b)=>b.mr-a.mr||b.mc-a.mc)}
 function getUnivs(){
@@ -358,13 +446,15 @@ function filterMaj(){if(!sTxt)return MAJORS;const q=sTxt.toLowerCase();return MA
 function render(){
   // 로그인 상태면 프로필 등급 자동 반영
   if(profileUser&&profileData&&profileData.grade){myGrade=parseFloat(profileData.grade)||0}
+  const isCareer=mode==='K';
   document.getElementById('app').innerHTML=`
-    <div class="header"><h1>🧭 입시 나침반</h1><p>선택과목과 학과/대학을 양방향으로 탐색하세요 · 집단지성 DB</p><span class="badge">2022 개정 교육과정 · 학종 DB ${UNIV_DB.length}개 대학</span></div>
+    <div class="header"><h1>${isCareer?'🧭 직업 나침반':'🧭 입시 나침반'}</h1><p>${isCareer?'학과와 연결된 직업·직업군·전망을 한눈에 탐색하세요':'선택과목과 학과/대학을 양방향으로 탐색하세요 · 집단지성 DB'}</p><span class="badge">입시나침반 학과 DB 연동 · 학종 DB ${UNIV_DB.length}개 대학</span></div>
     <div class="tabs">
       <button class="tab ${mode==='F'?'active':''}" onclick="SM('F')">🔐 내 프로필</button>
       <button class="tab ${mode==='D'?'active':''}" onclick="SM('D')">📈 내신 로드맵</button>
       <button class="tab ${mode==='A'?'active':''}" onclick="SM('A')">📚 과목 → 학과</button>
       <button class="tab ${mode==='B'?'active':''}" onclick="SM('B')">🎯 학과 → 과목·전략</button>
+      <button class="tab ${mode==='K'?'active':''}" onclick="SM('K')">🧭 직업나침반</button>
       <button class="tab ${mode==='E'?'active':''}" onclick="SM('E')">🔬 과목 시뮬레이터</button>
       <button class="tab ${mode==='C'?'active':''}" onclick="SM('C')">⚙️ DB 관리</button>
       <button class="tab ${mode==='G'?'active':''}" onclick="SM('G')">❓ 도움말</button>
@@ -372,7 +462,7 @@ function render(){
       <button class="tab ${mode==='I'?'active':''}" onclick="SM('I')">💬 챗봇</button>
       <button class="tab ${mode==='J'?'active':''}" onclick="SM('J')">📋 상담 도우미</button>
     </div>
-    ${mode==='A'?renderA():mode==='B'?renderB():mode==='C'?renderC():mode==='D'?renderD():mode==='E'?renderE():mode==='F'?renderF():mode==='H'?renderH():mode==='I'?renderI():mode==='J'?renderJ():renderG()}
+    ${mode==='A'?renderA():mode==='B'?renderB():mode==='C'?renderC():mode==='D'?renderD():mode==='E'?renderE():mode==='F'?renderF():mode==='H'?renderH():mode==='I'?renderI():mode==='J'?renderJ():mode==='K'?renderK():renderG()}
     <div class="footer">입시 나침반 v6.3 (웹 서비스) — 2027학년도 학종 가이드북 기반 · 제주여고 정보교과<br>※ 실제 지원 시 반드시 해당 대학 모집요강을 직접 확인하세요</div>`;
 }
 
@@ -393,7 +483,7 @@ function renderA(){
     </div>
     <div class="step"><div class="step-title"><div class="step-num">2</div><div class="step-label">매칭된 학과 (${m.length}개)</div></div>
     ${m.map(x=>{const fc=FC[x.field]||{bg:'rgba(148,163,184,.1)',c:'#94a3b8'},pct=Math.round(x.mr*100),bc=pct>=70?'var(--green)':pct>=40?'var(--amber)':'var(--text3)';
-      return`<div class="card" onclick="GoB('${x.id}')"><div style="display:flex;justify-content:space-between"><div class="card-title">${x.name}</div><span style="font-size:.73rem;font-weight:700;color:${bc}">${pct}%</span></div><div class="match-bar"><div class="match-fill" style="width:${pct}%;background:${bc}"></div></div><div class="card-desc">${x.desc}</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px">${x.rec.map(s=>`<span style="font-size:.65rem;padding:2px 5px;border-radius:5px;${selSub.has(s)?'background:rgba(56,189,248,.2);color:var(--accent);font-weight:600':'background:rgba(100,116,139,.08);color:var(--text3)'}">${s}</span>`).join('')}</div><span class="card-field" style="background:${fc.bg};color:${fc.c}">${x.field}</span></div>`}).join('')}</div>
+      return`<div class="card" onclick="GoB('${x.id}')"><div style="display:flex;justify-content:space-between"><div class="card-title">${x.name}</div><span style="font-size:.73rem;font-weight:700;color:${bc}">${pct}%</span></div><div class="match-bar"><div class="match-fill" style="width:${pct}%;background:${bc}"></div></div><div class="card-desc">${x.desc}</div><div style="font-size:.68rem;color:var(--text2);margin-top:5px">직업군: ${careerGroup(x)} · ${careerJobs(x).slice(0,3).join(', ')}</div><div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:5px">${x.rec.map(s=>`<span style="font-size:.65rem;padding:2px 5px;border-radius:5px;${selSub.has(s)?'background:rgba(56,189,248,.2);color:var(--accent);font-weight:600':'background:rgba(100,116,139,.08);color:var(--text3)'}">${s}</span>`).join('')}</div><span class="card-field" style="background:${fc.bg};color:${fc.c}">${x.field}</span><button class="db-btn no-print" onclick="event.stopPropagation();GoK('${x.id}')" style="float:right;font-size:.65rem;padding:3px 8px;margin-top:3px">직업 보기</button></div>`}).join('')}</div>
     <div class="step"><div class="step-title"><div class="step-num">3</div><div class="step-label">지원 가능 대학 (${u.length}개교)</div></div>
     <div class="filters no-print">${['전체','서울','경인','강원','충청','호남','대경','동남','제주'].map(r=>`<div class="fbtn ${regF===r?'active':''}" onclick="SR('${r}')">${r}</div>`).join('')}</div>
     ${rUP(u,m)}</div>`}`;
@@ -410,10 +500,77 @@ function renderB(){
     <div class="step"><div class="step-title"><div class="step-num">2</div><div class="step-label">${mj.name} — 선택과목 & 공부 전략</div></div>
     <div class="strategy"><h3>📋 권장 선택과목</h3><div class="rec-subjects">${mj.rec.map(s=>`<span class="rec-chip ${mj.core.includes(s)?'core':''}">${s}</span>`).join('')}</div><p style="font-size:.72rem;color:var(--text3);margin-bottom:10px">★ = 핵심 필수 과목 (반드시 선택 권장)</p>
     <h4>💡 전형 전략</h4><p>${mj.strategy}</p>
-    <h4>📖 학년별 공부 로드맵</h4><ul>${mj.studyTips.map(t=>`<li>${t}</li>`).join('')}</ul></div></div>
+    <h4>📖 학년별 공부 로드맵</h4><ul>${mj.studyTips.map(t=>`<li>${t}</li>`).join('')}</ul></div>
+    ${renderCareerSummary(mj,true)}</div>
     <div class="step"><div class="step-title"><div class="step-num">3</div><div class="step-label">${mj.name} — 지원 가능 대학 (${u.length}개교)</div></div>
     <div class="filters no-print">${['전체','서울','경인','강원','충청','호남','대경','동남','제주'].map(r=>`<div class="fbtn ${regF===r?'active':''}" onclick="SR('${r}')">${r}</div>`).join('')}</div>
     ${rUP(u)}</div>`}`;
+}
+
+function renderK(){
+  const fields=['전체',...new Set(MAJORS.map(m=>m.field))];
+  const q=(sTxt||'').toLowerCase();
+  const filtered=MAJORS.filter(m=>{
+    const fieldOk=regF==='전체'||m.field===regF;
+    const text=[m.name,m.desc,m.field,m.career,m.prospectDesc,(m.keywords||[]).join(' ')].join(' ').toLowerCase();
+    return fieldOk&&(!q||text.includes(q));
+  }).sort((a,b)=>a.field.localeCompare(b.field,'ko')||a.name.localeCompare(b.name,'ko'));
+  const mj=selMaj?MAJORS.find(x=>x.id===selMaj):filtered[0];
+  const stats=mj?linkedDeptStats(mj):null;
+  return `<div class="step"><div class="step-title"><div class="step-num">1</div><div class="step-label">직업과 연결할 학과를 찾으세요</div></div>
+    <div class="search-box no-print"><span class="search-icon">🔍</span><input id="mjSearch" placeholder="직업, 직업군, 학과명 검색..." value="${sTxt}" oninput="debouncedSearch(this.value)"></div>
+    <div class="filters no-print">${fields.map(f=>`<div class="fbtn ${regF===f?'active':''}" onclick="SR('${f}')">${f}</div>`).join('')}</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-num">${MAJORS.length}</div><div class="stat-label">연동 학과</div></div>
+      <div class="stat"><div class="stat-num">${new Set(MAJORS.map(m=>m.field)).size}</div><div class="stat-label">학과 계열</div></div>
+      <div class="stat"><div class="stat-num">${MAJORS.reduce((s,m)=>s+careerJobs(m).length,0)}</div><div class="stat-label">대표 직업</div></div>
+      <div class="stat"><div class="stat-num">${filtered.length}</div><div class="stat-label">검색 결과</div></div>
+    </div>
+  </div>
+  <div class="two-col">
+    <div>
+      ${filtered.map(m=>{
+        const fc=FC[m.field]||{bg:'rgba(148,163,184,.1)',c:'#94a3b8'};
+        return `<div class="card ${mj&&mj.id===m.id?'active':''}" onclick="selMaj='${m.id}';render()">
+          <div class="card-title">${m.name}</div>
+          <div class="card-desc">${careerGroup(m)}</div>
+          <div style="font-size:.68rem;color:var(--text3);margin-top:4px">${careerJobs(m).slice(0,3).join(' · ')}</div>
+          <span class="card-field" style="background:${fc.bg};color:${fc.c}">${m.field}</span>
+        </div>`;
+      }).join('')||'<div class="empty"><div class="empty-text">검색 결과가 없습니다</div></div>'}
+    </div>
+    <div>
+      ${!mj?'<div class="empty"><div class="empty-text">왼쪽에서 학과를 선택하세요</div></div>':`
+      <div class="strategy">
+        <h3>${mj.name}</h3>
+        <p>${mj.desc}</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0">
+          <span class="rec-chip">${careerGroup(mj)}</span>
+          <span class="rec-chip">취업 ${careerLevelText('employRate',mj.employRate)}</span>
+          <span class="rec-chip">초봉 ${careerLevelText('salary',mj.salary)}</span>
+          <span class="rec-chip">전망 ${careerLevelText('prospect',mj.prospect)}</span>
+        </div>
+        <h4>👔 대표 직업</h4>
+        <div class="chip-grid">${careerJobs(mj).map(j=>`<span class="chip selected" style="cursor:default">${j}</span>`).join('')}</div>
+        <h4>🧩 직업군 설명</h4>
+        <p>${careerGroup(mj)}은 ${mj.name}에서 배우는 전공 지식과 문제 해결 방식을 바탕으로 진출하는 분야입니다. ${mj.prospectDesc||''}</p>
+        <h4>📚 전공 준비 포인트</h4>
+        <ul>${(mj.studyTips||[]).map(t=>`<li>${t}</li>`).join('')}</ul>
+        <button class="db-btn primary no-print" onclick="GoB('${mj.id}')" style="margin-top:10px">입시나침반에서 지원 대학 보기</button>
+      </div>
+      <div class="strategy">
+        <h3>입시나침반 학과 DB 연동</h3>
+        <div class="stats" style="grid-template-columns:repeat(3,1fr);margin-top:0">
+          <div class="stat"><div class="stat-num">${stats.univCount}</div><div class="stat-label">표시 대학</div></div>
+          <div class="stat"><div class="stat-num">${stats.count}</div><div class="stat-label">학과 매칭</div></div>
+          <div class="stat"><div class="stat-num">${stats.totalQ||'-'}</div><div class="stat-label">확인 모집인원</div></div>
+        </div>
+        ${stats.samples.length?`<table class="utbl"><thead><tr><th>대학</th><th>전형 / 학과</th><th>모집</th><th>경쟁률</th></tr></thead><tbody>
+          ${stats.samples.map(s=>`<tr><td class="uname">${s.univ}</td><td>${s.prog}<br><span style="color:var(--accent);font-size:.65rem">${s.dept}</span></td><td>${s.q||'-'}명</td><td>${s.cr?s.cr+':1':'-'}</td></tr>`).join('')}
+        </tbody></table>`:'<p>현재 학과별 모집정보와 직접 매칭된 대학 데이터가 없습니다. 입시나침반의 전형 전체 정보는 학과 → 과목·전략 탭에서 확인하세요.</p>'}
+      </div>`}
+    </div>
+  </div>`;
 }
 
 
@@ -2276,6 +2433,7 @@ window.SM=function(m){mode=m;selSub.clear();selMaj=null;openP.clear();sTxt='';re
 window.TS=function(s){selSub.has(s)?selSub.delete(s):selSub.add(s);render()};
 window.SMJ=function(id){selMaj=selMaj===id?null:id;openP.clear();render()};
 window.GoB=function(id){mode='B';selMaj=id;sTxt='';openP.clear();render();window.scrollTo({top:0,behavior:'smooth'})};
+window.GoK=function(id){mode='K';selMaj=id;sTxt='';regF='전체';openP.clear();render();window.scrollTo({top:0,behavior:'smooth'})};
 window.SR=function(r){regF=r;render()};
 window.TP=function(n){openP.has(n)?openP.delete(n):openP.add(n);render()};
 window.US=function(v){sTxt=v;selMaj=null;render();const inp=document.getElementById('mjSearch');if(inp){inp.focus();inp.setSelectionRange(v.length,v.length)}};
