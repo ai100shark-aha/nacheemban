@@ -1363,17 +1363,41 @@ function generateResponse(q, intent, ent) {
     const univ = UNIV_DB.find(u => u.nm === univName);
     if(!univ) return {text: `${univName} 정보를 DB에서 찾을 수 없습니다.`, cards: []};
     const SKIP_KW = ['기회균형','농어촌','특수','재직','특성화','기초생활','장애인','국가보훈','고른기회','사회통합','보훈'];
-    const pgs = univ.pg.filter(p => !SKIP_KW.some(k => p.n.includes(k)));
+    let pgs = univ.pg.filter(p => !SKIP_KW.some(k => p.n.includes(k)));
     chatContext.lastUnivs = [univName];
+    // 학과가 지정된 경우 해당 학과가 포함된 전형만 필터
+    const hasMajor = majors.length > 0;
+    if(hasMajor) {
+      pgs = pgs.filter(p => {
+        const deptMatch = (p.dept||[]).some(d => majors.some(m => d.d.includes(m)));
+        const gradeMatch = p.grades && majors.some(m => Object.keys(p.grades).some(k => k.includes(m)));
+        return deptMatch || gradeMatch;
+      });
+      if(pgs.length === 0) return {text: `${univName}에서 "${majors.join(', ')}" 관련 전형을 찾지 못했습니다.`, cards: []};
+    }
     const cards = pgs.map(p => {
-      const gradeInfo = p.grades ? Object.entries(p.grades).slice(0,3).map(([k,v])=>`${k}: ${v.avg}등급`).join(', ') : '';
+      let gradeInfo = '';
+      let deptInfo = '';
+      if(hasMajor) {
+        // 특정 학과 등급 정보
+        if(p.grades) {
+          const relevant = Object.entries(p.grades).filter(([k]) => majors.some(m => k.includes(m)));
+          if(relevant.length) gradeInfo = relevant.map(([k,v])=>`${k}: ${v.avg}등급${v.fill?' ('+v.fill+'명)':''}`).join(', ');
+        }
+        // 특정 학과 모집인원
+        const matchDept = (p.dept||[]).filter(d => majors.some(m => d.d.includes(m)));
+        if(matchDept.length) deptInfo = matchDept.map(d => `${d.d} ${d.q||'?'}명${d.cr?' 경쟁률'+d.cr+':1':''}`).join(' / ');
+      } else {
+        gradeInfo = p.grades ? Object.entries(p.grades).slice(0,3).map(([k,v])=>`${k}: ${v.avg}등급`).join(', ') : '';
+      }
       return {
         title: p.n,
-        sub: `모집 ${p.q||'?'}명 ${p.cr ? '| 경쟁률 '+p.cr+':1' : ''}`,
+        sub: deptInfo || `모집 ${p.q||'?'}명 ${p.cr ? '| 경쟁률 '+p.cr+':1' : ''}`,
         detail: `면접: ${p.iv>0?p.iv+'%':'없음'} | 수능최저: ${p.mn||'미적용'}${gradeInfo?' | '+gradeInfo:''}`
       };
     });
-    return {text: `**${univName}** (${univ.rg}) 학종 전형 목록입니다.`, cards};
+    const majorText = hasMajor ? ` ${majors.join('·')}` : '';
+    return {text: `**${univName}** (${univ.rg})${majorText} 학종 전형 정보입니다.`, cards};
   }
 
   // ── 수능최저 없는 전형 ──
