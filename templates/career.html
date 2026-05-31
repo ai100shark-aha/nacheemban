@@ -650,7 +650,7 @@ function renderDashboard() {
         <p class="page-subtitle">20개 직업을 탐색하고, 공부와 미래를 연결해 보세요</p>
       </div>
       <div style="display:flex;justify-content:center;margin-bottom:20px">
-        <input class="search-box" id="searchBox" value="${dashboardSearch}" placeholder="직업 이름, 키워드로 검색..." />
+        <input class="search-box" id="searchBox" value="${dashboardSearch}" placeholder="직업 이름, 키워드로 검색 (Enter)" onkeydown="if(event.key==='Enter'){event.preventDefault();dashboardSearch=this.value;updateCardGrid()}" />
       </div>
       <div class="filter-group">
         ${cats.map(c => {
