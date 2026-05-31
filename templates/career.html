@@ -659,7 +659,7 @@ function renderDashboard() {
           return `<button class="filter-btn ${isActive?'active':''}" style="background:${bg}${isActive?';color:#fff':''}" onclick="setFilter('${c}')">${c!=="전체"?CATEGORIES[c].icon+" ":""}${c}</button>`;
         }).join("")}
       </div>
-      <div class="card-grid">
+      <div class="card-grid" id="cardGrid">
         ${filtered.map(j => {
           const cat = CATEGORIES[j.category];
           return `
@@ -927,20 +927,44 @@ function renderPathPage() {
 // ═══════════════════════════════════════
 // 이벤트 바인딩
 // ═══════════════════════════════════════
+let isComposing = false;
 function bindEvents() {
   const searchBox = document.getElementById("searchBox");
   if (searchBox) {
-    searchBox.addEventListener("input", (e) => {
+    searchBox.addEventListener("compositionstart", () => { isComposing = true; });
+    searchBox.addEventListener("compositionend", (e) => {
+      isComposing = false;
       dashboardSearch = e.target.value;
-      document.querySelector(".card-grid").outerHTML = renderDashboard().match(/<div class="card-grid">[\s\S]*?<\/div>\s*<\/div>/)?.[0] || '';
-      // 간단히 전체 재렌더
-      const app = document.getElementById("app");
-      app.innerHTML = renderDashboard();
-      bindEvents();
-      document.getElementById("searchBox").focus();
-      document.getElementById("searchBox").setSelectionRange(dashboardSearch.length, dashboardSearch.length);
+      updateCardGrid();
+    });
+    searchBox.addEventListener("input", (e) => {
+      if (isComposing) return;
+      dashboardSearch = e.target.value;
+      updateCardGrid();
     });
   }
+}
+function updateCardGrid() {
+  const filtered = JOBS.filter(j => {
+    if (dashboardFilter !== "전체" && j.category !== dashboardFilter) return false;
+    if (dashboardSearch && !j.name.includes(dashboardSearch) && !j.oneliner.includes(dashboardSearch) && !j.category.includes(dashboardSearch)) return false;
+    return true;
+  });
+  const gridEl = document.getElementById("cardGrid");
+  if (!gridEl) return;
+  if (filtered.length === 0) {
+    gridEl.innerHTML = '<div style="text-align:center;padding:48px;color:#64748b;grid-column:1/-1">검색 결과가 없습니다</div>';
+    return;
+  }
+  gridEl.innerHTML = filtered.map(j => {
+    const cat = CATEGORIES[j.category];
+    return `<div class="job-card" onclick="navigate('detail','${j.name}')" onmouseenter="this.style.boxShadow='0 12px 32px ${cat.color}22';this.style.borderColor='${cat.color}44'" onmouseleave="this.style.boxShadow='none';this.style.borderColor='rgba(255,255,255,0.06)'">
+      <div class="job-card-header"><div class="job-card-icon" style="background:${cat.color}22">${j.emoji}</div><div><div class="job-card-name">${j.name}</div><div class="job-card-cat" style="color:${cat.color}">${cat.icon} ${j.category}</div></div></div>
+      <div class="job-card-desc">${j.oneliner}</div>
+      <div class="job-card-tags">${Object.keys(j.subjects).slice(0,3).map(s => `<span class="job-card-tag">${s}</span>`).join("")}</div>
+      <div class="job-card-salary">💰 ${j.salary.entry}만</div>
+    </div>`;
+  }).join("");
 }
 
 function setFilter(f) {
