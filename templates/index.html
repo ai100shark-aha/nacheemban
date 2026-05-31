@@ -1534,8 +1534,14 @@ window.chatSend = function() {
 
   chatHistory.push({role:'user', text:q});
 
-  const intent = detectIntent(q);
   const ent = extractEntities(q);
+  let intent = detectIntent(q);
+  // 대학명이 추출됐는데 의도가 general이면 → univ_info로 보정
+  if(ent.univs.length > 0 && (intent === 'general' || intent === 'explain')) {
+    if(/전형|모집|정보|알려|어때|몇|인원|경쟁|커트|합격/.test(q)) intent = 'univ_info';
+    else if(/등급|내신|갈수|가능|추천/.test(q)) intent = 'univ_recommend';
+    else intent = 'univ_info';
+  }
   const resp = generateResponse(q, intent, ent);
 
   chatHistory.push({role:'bot', text:resp.text, cards:resp.cards||[]});
