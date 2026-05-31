@@ -190,6 +190,9 @@ def _save_log(data):
 def index(request):
     return render(request, 'index.html')
 
+def career(request):
+    return render(request, 'career.html')
+
 def get_db(request):
     db = _load_db()
     return JsonResponse(db, safe=False, json_dumps_params={'ensure_ascii': False})
