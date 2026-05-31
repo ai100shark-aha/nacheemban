@@ -492,7 +492,7 @@ function renderA(){
 function renderB(){
   const fl=filterMaj(),mj=selMaj?MAJORS.find(x=>x.id===selMaj):null,u=mj?getUnivs():[];
   return `<div class="step"><div class="step-title"><div class="step-num">1</div><div class="step-label">학과를 선택하세요</div></div>
-    <div class="search-box no-print"><span class="search-icon">🔍</span><input id="mjSearch" placeholder="학과명, 계열, 키워드 검색..." value="${sTxt}" oninput="debouncedSearch(this.value)"></div>
+    <div class="search-box no-print"><span class="search-icon">🔍</span><input id="mjSearch" placeholder="학과명, 계열, 키워드 검색..." value="${sTxt}" oninput="if(!event.isComposing)debouncedSearch(this.value)" oncompositionend="debouncedSearch(this.value)"></div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:7px">
     ${fl.map(m=>{const fc=FC[m.field]||{bg:'rgba(148,163,184,.1)',c:'#94a3b8'};return`<div class="card ${selMaj===m.id?'active':''}" onclick="SMJ('${m.id}')"><div class="card-title">${m.name}</div><div class="card-desc">${m.desc}</div><span class="card-field" style="background:${fc.bg};color:${fc.c}">${m.field}</span></div>`}).join('')}</div></div>
     ${!mj?'<div class="empty"><div class="empty-icon">🎯</div><div class="empty-text">학과를 클릭하면 필요한 선택과목, 공부 전략,<br>지원 가능 대학이 나타납니다</div></div>':`
@@ -518,7 +518,7 @@ function renderK(){
   const mj=selMaj?MAJORS.find(x=>x.id===selMaj):filtered[0];
   const stats=mj?linkedDeptStats(mj):null;
   return `<div class="step"><div class="step-title"><div class="step-num">1</div><div class="step-label">직업과 연결할 학과를 찾으세요</div></div>
-    <div class="search-box no-print"><span class="search-icon">🔍</span><input id="mjSearch" placeholder="직업, 직업군, 학과명 검색..." value="${sTxt}" oninput="debouncedSearch(this.value)"></div>
+    <div class="search-box no-print"><span class="search-icon">🔍</span><input id="mjSearch" placeholder="직업, 직업군, 학과명 검색..." value="${sTxt}" oninput="if(!event.isComposing)debouncedSearch(this.value)" oncompositionend="debouncedSearch(this.value)"></div>
     <div class="filters no-print">${fields.map(f=>`<div class="fbtn ${regF===f?'active':''}" onclick="SR('${f}')">${f}</div>`).join('')}</div>
     <div class="stats">
       <div class="stat"><div class="stat-num">${MAJORS.length}</div><div class="stat-label">연동 학과</div></div>
@@ -2436,7 +2436,7 @@ window.GoB=function(id){mode='B';selMaj=id;sTxt='';openP.clear();render();window
 window.GoK=function(id){mode='K';selMaj=id;sTxt='';regF='전체';openP.clear();render();window.scrollTo({top:0,behavior:'smooth'})};
 window.SR=function(r){regF=r;render()};
 window.TP=function(n){openP.has(n)?openP.delete(n):openP.add(n);render()};
-window.US=function(v){sTxt=v;selMaj=null;render();const inp=document.getElementById('mjSearch');if(inp){inp.focus();inp.setSelectionRange(v.length,v.length)}};
+window.US=function(v){sTxt=v;selMaj=null;const activeEl=document.activeElement;const wasSearch=activeEl&&activeEl.id==='mjSearch';render();if(wasSearch){const inp=document.getElementById('mjSearch');if(inp){inp.focus();inp.value=v;inp.setSelectionRange(v.length,v.length)}}};
 let _searchTimer=null;
 let _isComposing=false;
 document.addEventListener('compositionstart',()=>{_isComposing=true});
