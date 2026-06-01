@@ -1191,14 +1191,21 @@ function queryUnivs({majors=[], regions=[], maxGrade=null, noSuneung=false, hasI
       // 학과 매칭 (학과목록 dept 기반으로만 매칭, grades만으로는 매칭 안 함)
       let majorMatch = majors.length === 0;
       let matchedDept = null;
+      let gradeBasedInfo = null; // grades에서 추출한 학과별 정보
       if(majors.length > 0) {
         const deptMatch = (pg.dept||[]).find(d => majors.some(m => d.d.includes(m)));
         if(deptMatch) { majorMatch = true; matchedDept = deptMatch; }
         else {
           // dept 목록이 없는 전형은 grades로 폴백 (단, 전형명이 특정 학과 전용이 아닐 때만)
           if((!pg.dept || pg.dept.length === 0) && pg.grades) {
-            const gradeMatch = majors.some(m => Object.keys(pg.grades).some(k => k.includes(m)));
-            if(gradeMatch) majorMatch = true;
+            for(const m of majors) {
+              const gKey = Object.keys(pg.grades).find(k => k.includes(m));
+              if(gKey) {
+                majorMatch = true;
+                gradeBasedInfo = { name: gKey, q: pg.grades[gKey].fill || null, avg: pg.grades[gKey].avg };
+                break;
+              }
+            }
           }
         }
       }
@@ -1238,10 +1245,11 @@ function queryUnivs({majors=[], regions=[], maxGrade=null, noSuneung=false, hasI
 
       results.push({
         univ: u.nm, rg: u.rg, pgName: pg.n,
-        quota: matchedDept ? (matchedDept.q || pg.q) : pg.q,
+        quota: matchedDept ? (matchedDept.q || pg.q) : (gradeBasedInfo?.q || pg.q),
         cr: matchedDept?.cr || pg.cr, iv: pg.iv,
         mn: pg.mn, grade: relevantGrade,
-        deptName: matchedDept?.d, deptQ: matchedDept?.q,
+        deptName: matchedDept?.d || gradeBasedInfo?.name,
+        deptQ: matchedDept?.q || gradeBasedInfo?.q,
         deptCr: matchedDept?.cr
       });
     });
@@ -1365,6 +1373,13 @@ function generateResponse(q, intent, ent) {
     chatContext.lastUnivs = [univName];
     // 학과가 지정된 경우 해당 학과가 포함된 전형만 필터
     const hasMajor = majors.length > 0;
+    // SW/소프트웨어 전형은 CS 관련 학과 검색이 아니면 제외
+    const SW_KW_INFO = ['소프트웨어','알고리즘','SW'];
+    const CS_MAJORS_INFO = ['컴퓨터','소프트웨어','인공지능','정보','데이터','SW','AI'];
+    const isCSInfoSearch = majors.some(m => CS_MAJORS_INFO.some(c => m.includes(c) || c.includes(m)));
+    if(!isCSInfoSearch) {
+      pgs = pgs.filter(p => !SW_KW_INFO.some(k => p.n.includes(k)));
+    }
     if(hasMajor) {
       pgs = pgs.filter(p => {
         const deptMatch = (p.dept||[]).some(d => majors.some(m => d.d.includes(m)));
@@ -1376,11 +1391,15 @@ function generateResponse(q, intent, ent) {
     const cards = pgs.map(p => {
       let gradeInfo = '';
       let deptInfo = '';
+      let gradeFill = null; // grades fill 값 (학과별 모집인원 추정)
       if(hasMajor) {
         // 특정 학과 등급 정보
         if(p.grades) {
           const relevant = Object.entries(p.grades).filter(([k]) => majors.some(m => k.includes(m)));
-          if(relevant.length) gradeInfo = relevant.map(([k,v])=>`${k}: ${v.avg}등급${v.fill?' ('+v.fill+'명)':''}`).join(', ');
+          if(relevant.length) {
+            gradeInfo = relevant.map(([k,v])=>`${k}: ${v.avg}등급${v.fill?' ('+v.fill+'명)':''}`).join(', ');
+            gradeFill = relevant[0][1].fill || null;
+          }
         }
         // 특정 학과 모집인원
         const matchDept = (p.dept||[]).filter(d => majors.some(m => d.d.includes(m)));
@@ -1388,9 +1407,11 @@ function generateResponse(q, intent, ent) {
       } else {
         gradeInfo = p.grades ? Object.entries(p.grades).slice(0,3).map(([k,v])=>`${k}: ${v.avg}등급`).join(', ') : '';
       }
+      // 모집인원: dept 우선, 없으면 grades fill, 최후에 전체인원
+      const displayQuota = deptInfo ? '' : (gradeFill ? `모집 ${gradeFill}명 (${majors[0]})` : `모집 ${p.q||'?'}명`);
       return {
         title: p.n,
-        sub: deptInfo || `모집 ${p.q||'?'}명 ${p.cr ? '| 경쟁률 '+p.cr+':1' : ''}`,
+        sub: deptInfo || `${displayQuota} ${p.cr ? '| 경쟁률 '+p.cr+':1' : ''}`,
         detail: `면접: ${p.iv>0?p.iv+'%':'없음'} | 수능최저: ${p.mn||'미적용'}${gradeInfo?' | '+gradeInfo:''}`
       };
     });
@@ -1407,11 +1428,13 @@ function generateResponse(q, intent, ent) {
     const majorText = majors.length ? majors[0]+' ' : '';
     return {
       text: `수능최저 없는 ${regionText}${majorText}학종 전형 ${results.length}개입니다.`,
-      cards: results.map(r => ({
+      cards: results.map(r => {
+        const quotaText = r.deptQ ? `모집 ${r.deptQ}명` : (r.deptName ? `전체 ${r.quota||'?'}명` : `모집 ${r.quota||'?'}명`);
+        return {
         title: `${r.univ} - ${r.pgName}`,
-        sub: `${r.deptName ? r.deptName+' ' : ''}모집 ${r.deptQ||r.quota||'?'}명 ${r.cr ? '| 경쟁률 '+r.cr+':1' : ''}`,
+        sub: `${r.deptName ? r.deptName+' ' : ''}${quotaText} ${r.cr ? '| 경쟁률 '+r.cr+':1' : ''}`,
         detail: `면접: ${r.iv>0?r.iv+'%':'없음'} | 합격등급: ${r.grade||'?'}`
-      }))
+      };})
     };
   }
 
@@ -1439,13 +1462,15 @@ function generateResponse(q, intent, ent) {
 
     return {
       text: `${gradeText}${majorText}${regionText} 지원 가능 전형 **${results.length}개**입니다. ${comment}`,
-      cards: results.map(r => ({
+      cards: results.map(r => {
+        const quotaText = r.deptQ ? `모집 ${r.deptQ}명` : (r.deptName ? `전체 ${r.quota||'?'}명` : `모집 ${r.quota||'?'}명`);
+        return {
         title: `${r.univ} - ${r.pgName}`,
-        sub: `${r.deptName ? r.deptName+' ' : ''}모집 ${r.deptQ||r.quota||'?'}명 ${r.deptCr||r.cr ? '| 경쟁률 '+(r.deptCr||r.cr)+':1' : ''}`,
+        sub: `${r.deptName ? r.deptName+' ' : ''}${quotaText} ${r.deptCr||r.cr ? '| 경쟁률 '+(r.deptCr||r.cr)+':1' : ''}`,
         detail: `합격등급: ${r.grade ? r.grade+'등급' : '?'} | 면접: ${r.iv>0?r.iv+'%':'없음'} | 수능최저: ${r.mn||'미적용'}`,
         tag: r.grade && grade ? (r.grade < grade-0.2 ? '도전' : r.grade <= grade+0.3 ? '적정' : '안정') : null,
         warning: getWarning(r.univ, r.grade)
-      }))
+      };})
     };
   }
 
