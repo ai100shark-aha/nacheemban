@@ -1147,8 +1147,11 @@ function extractEntities(q) {
   const regions = ['서울','경인','경기','인천','강원','충청','충북','충남','호남','전북','전남','광주','대경','대구','경북','동남','부산','경남','울산','제주'];
   regions.forEach(r => { if(q.includes(r)) ent.regions.push(r); });
 
-  // 대학명 추출
-  UNIV_DB.forEach(u => { if(q.includes(u.nm.replace('학교','').replace('대학교',''))) ent.univs.push(u.nm); });
+  // 대학명 추출 (괄호 접미사 제거 후 매칭)
+  UNIV_DB.forEach(u => {
+    const base = u.nm.replace(/\(.*?\)/g,'').replace('학교','').replace('대학교','').trim();
+    if(base.length >= 2 && q.includes(base)) ent.univs.push(u.nm);
+  });
 
   // 학과 키워드 추출
   const majorKws = ['의예','치의예','한의예','수의예','약학','간호','컴퓨터','소프트웨어','인공지능','전자','전기','기계','화학공학','생명공학','건축','토목','경영','경제','금융','법학','행정','경찰','경찰행정','소방','군사','사회복지','사회학','심리','교육','사범','유아','아동','언어','국어','영어','문학','미디어','언론','디자인','미술','체육','스포츠','물리치료','방사선','임상병리','작업치료','치위생','보건','식품','영양','관광','호텔','항공','국제','무역','도시','환경','수학','통계','물리','화학','생명','생물','해양','수산','농업','산림'];
@@ -1172,7 +1175,15 @@ function toRgCode(regionText) {
   return null;
 }
 
-// ── 핵심 쿼리 엔진 ──────────────────────────────
+// ── 핵심 쿼리 엔진 ────────────────────────────
+// 학과명 정밀 매칭: '의예'가 '수의예과'에 매칭되지 않도록
+function majorMatchesDept(deptName, major) {
+  const idx = deptName.indexOf(major);
+  if(idx < 0) return false;
+  // '의예'가 '수의예', '치의예', '한의예'에 매칭되는 것 방지
+  if(major === '의예' && idx > 0 && '수치한'.includes(deptName[idx-1])) return false;
+  return true;
+}
 function queryUnivs({majors=[], regions=[], maxGrade=null, noSuneung=false, hasInterview=null, limit=8}={}) {
   const SKIP_KW = ['기회균형','농어촌','특수','재직','특성화','기초생활','장애인','국가보훈','고른기회','사회통합','보훈','조기취업','장애'];
   // 특정 학과 전용 전형 필터 (SW전형은 컴퓨터/SW 검색 시만 포함)
@@ -1193,13 +1204,13 @@ function queryUnivs({majors=[], regions=[], maxGrade=null, noSuneung=false, hasI
       let matchedDept = null;
       let gradeBasedInfo = null; // grades에서 추출한 학과별 정보
       if(majors.length > 0) {
-        const deptMatch = (pg.dept||[]).find(d => majors.some(m => d.d.includes(m)));
+        const deptMatch = (pg.dept||[]).find(d => majors.some(m => majorMatchesDept(d.d, m)));
         if(deptMatch) { majorMatch = true; matchedDept = deptMatch; }
         else {
           // dept 목록이 없는 전형은 grades로 폴백 (단, 전형명이 특정 학과 전용이 아닐 때만)
           if((!pg.dept || pg.dept.length === 0) && pg.grades) {
             for(const m of majors) {
-              const gKey = Object.keys(pg.grades).find(k => k.includes(m));
+              const gKey = Object.keys(pg.grades).find(k => majorMatchesDept(k, m));
               if(gKey) {
                 majorMatch = true;
                 gradeBasedInfo = { name: gKey, q: pg.grades[gKey].fill || null, avg: pg.grades[gKey].avg };
@@ -1217,7 +1228,7 @@ function queryUnivs({majors=[], regions=[], maxGrade=null, noSuneung=false, hasI
         if(matchedDept) bestGrade = matchedDept.g || matchedDept.avg || null;
         if(!bestGrade && pg.grades && majors.length > 0) {
           for(const m of majors) {
-            const key = Object.keys(pg.grades).find(k => k.includes(m));
+            const key = Object.keys(pg.grades).find(k => majorMatchesDept(k, m));
             if(key && pg.grades[key].avg) { bestGrade = pg.grades[key].avg; break; }
           }
         }
@@ -1237,7 +1248,7 @@ function queryUnivs({majors=[], regions=[], maxGrade=null, noSuneung=false, hasI
       if(matchedDept) relevantGrade = matchedDept.g || matchedDept.avg || null;
       if(!relevantGrade && pg.grades && majors.length > 0) {
         for(const m of majors) {
-          const key = Object.keys(pg.grades).find(k => k.includes(m));
+          const key = Object.keys(pg.grades).find(k => majorMatchesDept(k, m));
           if(key) { relevantGrade = pg.grades[key].avg; break; }
         }
       }
@@ -1365,58 +1376,60 @@ function generateResponse(q, intent, ent) {
 
   // ── 대학 정보 질문 ──
   if(intent === 'univ_info' && ent.univs.length > 0) {
-    const univName = ent.univs[0];
-    const univ = UNIV_DB.find(u => u.nm === univName);
-    if(!univ) return {text: `${univName} 정보를 DB에서 찾을 수 없습니다.`, cards: []};
     const SKIP_KW = ['기회균형','농어촌','특수','재직','특성화','기초생활','장애인','국가보훈','고른기회','사회통합','보훈'];
-    let pgs = univ.pg.filter(p => !SKIP_KW.some(k => p.n.includes(k)));
-    chatContext.lastUnivs = [univName];
-    // 학과가 지정된 경우 해당 학과가 포함된 전형만 필터
     const hasMajor = majors.length > 0;
-    // SW/소프트웨어 전형은 CS 관련 학과 검색이 아니면 제외
     const SW_KW_INFO = ['소프트웨어','알고리즘','SW'];
     const CS_MAJORS_INFO = ['컴퓨터','소프트웨어','인공지능','정보','데이터','SW','AI'];
     const isCSInfoSearch = majors.some(m => CS_MAJORS_INFO.some(c => m.includes(c) || c.includes(m)));
-    if(!isCSInfoSearch) {
-      pgs = pgs.filter(p => !SW_KW_INFO.some(k => p.n.includes(k)));
-    }
-    if(hasMajor) {
-      pgs = pgs.filter(p => {
-        const deptMatch = (p.dept||[]).some(d => majors.some(m => d.d.includes(m)));
-        const gradeMatch = p.grades && majors.some(m => Object.keys(p.grades).some(k => k.includes(m)));
-        return deptMatch || gradeMatch;
-      });
-      if(pgs.length === 0) return {text: `${univName}에서 "${majors.join(', ')}" 관련 전형을 찾지 못했습니다.`, cards: []};
-    }
-    const cards = pgs.map(p => {
-      let gradeInfo = '';
-      let deptInfo = '';
-      let gradeFill = null; // grades fill 값 (학과별 모집인원 추정)
+
+    let allCards = [];
+    let foundUnivNames = [];
+    for(const univName of ent.univs) {
+      const univ = UNIV_DB.find(u => u.nm === univName);
+      if(!univ) continue;
+      let pgs = univ.pg.filter(p => !SKIP_KW.some(k => p.n.includes(k)));
+      if(!isCSInfoSearch) pgs = pgs.filter(p => !SW_KW_INFO.some(k => p.n.includes(k)));
       if(hasMajor) {
-        // 특정 학과 등급 정보
-        if(p.grades) {
-          const relevant = Object.entries(p.grades).filter(([k]) => majors.some(m => k.includes(m)));
-          if(relevant.length) {
-            gradeInfo = relevant.map(([k,v])=>`${k}: ${v.avg}등급${v.fill?' ('+v.fill+'명)':''}`).join(', ');
-            gradeFill = relevant[0][1].fill || null;
-          }
-        }
-        // 특정 학과 모집인원
-        const matchDept = (p.dept||[]).filter(d => majors.some(m => d.d.includes(m)));
-        if(matchDept.length) deptInfo = matchDept.map(d => `${d.d} ${d.q||'?'}명${d.cr?' 경쟁률'+d.cr+':1':''}`).join(' / ');
-      } else {
-        gradeInfo = p.grades ? Object.entries(p.grades).slice(0,3).map(([k,v])=>`${k}: ${v.avg}등급`).join(', ') : '';
+        pgs = pgs.filter(p => {
+          const deptMatch = (p.dept||[]).some(d => majors.some(m => majorMatchesDept(d.d, m)));
+          const gradeMatch = p.grades && majors.some(m => Object.keys(p.grades).some(k => majorMatchesDept(k, m)));
+          return deptMatch || gradeMatch;
+        });
       }
-      // 모집인원: dept 우선, 없으면 grades fill, 최후에 전체인원
-      const displayQuota = deptInfo ? '' : (gradeFill ? `모집 ${gradeFill}명 (${majors[0]})` : `모집 ${p.q||'?'}명`);
-      return {
-        title: p.n,
-        sub: deptInfo || `${displayQuota} ${p.cr ? '| 경쟁률 '+p.cr+':1' : ''}`,
-        detail: `면접: ${p.iv>0?p.iv+'%':'없음'} | 수능최저: ${p.mn||'미적용'}${gradeInfo?' | '+gradeInfo:''}`
-      };
-    });
+      if(pgs.length === 0) continue;
+      foundUnivNames.push(univName);
+      pgs.forEach(p => {
+        let gradeInfo = '';
+        let deptInfo = '';
+        let gradeFill = null;
+        if(hasMajor) {
+          if(p.grades) {
+            const relevant = Object.entries(p.grades).filter(([k]) => majors.some(m => majorMatchesDept(k, m)));
+            if(relevant.length) {
+              gradeInfo = relevant.map(([k,v])=>`${k}: ${v.avg}등급${v.fill?' ('+v.fill+'명)':''}`).join(', ');
+              gradeFill = relevant[0][1].fill || null;
+            }
+          }
+          const matchDept = (p.dept||[]).filter(d => majors.some(m => majorMatchesDept(d.d, m)));
+          if(matchDept.length) deptInfo = matchDept.map(d => `${d.d} ${d.q||'?'}명${d.cr?' 경쟁률'+d.cr+':1':''}`).join(' / ');
+        } else {
+          gradeInfo = p.grades ? Object.entries(p.grades).slice(0,3).map(([k,v])=>`${k}: ${v.avg}등급`).join(', ') : '';
+        }
+        const displayQuota = deptInfo ? '' : (gradeFill ? `모집 ${gradeFill}명 (${majors[0]})` : `모집 ${p.q||'?'}명`);
+        const univLabel = ent.univs.length > 1 ? `${univ.nm} - ` : '';
+        allCards.push({
+          title: `${univLabel}${p.n}`,
+          sub: deptInfo || `${displayQuota} ${p.cr ? '| 경쟁률 '+p.cr+':1' : ''}`,
+          detail: `면접: ${p.iv>0?p.iv+'%':'없음'} | 수능최저: ${p.mn||'미적용'}${gradeInfo?' | '+gradeInfo:''}`
+        });
+      });
+    }
+    chatContext.lastUnivs = foundUnivNames;
+    if(allCards.length === 0) return {text: `${ent.univs.join(', ')}에서 "${majors.join(', ')}" 관련 전형을 찾지 못했습니다.`, cards: []};
     const majorText = hasMajor ? ` ${majors.join('·')}` : '';
-    return {text: `**${univName}** (${univ.rg})${majorText} 학종 전형 정보입니다.`, cards};
+    const univText = foundUnivNames.length === 1 ? `**${foundUnivNames[0]}**` : `**${foundUnivNames.join(', ')}**`;
+    const rgText = foundUnivNames.length === 1 ? ` (${UNIV_DB.find(u=>u.nm===foundUnivNames[0])?.rg||''})` : '';
+    return {text: `${univText}${rgText}${majorText} 학종 전형 정보입니다.`, cards: allCards};
   }
 
   // ── 수능최저 없는 전형 ──
@@ -1481,7 +1494,7 @@ function generateResponse(q, intent, ent) {
     UNIV_DB.forEach(u => {
       u.pg.filter(p=>!SKIP_KW.some(k=>p.n.includes(k))&&p.cr).forEach(pg => {
         if(majors.length && pg.dept) {
-          const d = pg.dept.find(d=>majors.some(m=>d.d.includes(m)));
+          const d = pg.dept.find(d=>majors.some(m=>majorMatchesDept(d.d, m)));
           if(d?.cr) crData.push({univ:u.nm, pg:pg.n, cr:d.cr, dept:d.d});
         } else if(!majors.length) {
           crData.push({univ:u.nm, pg:pg.n, cr:pg.cr});
@@ -1511,7 +1524,7 @@ function generateResponse(q, intent, ent) {
       u.pg.filter(p=>!SKIP_KW.some(k=>p.n.includes(k))).forEach(pg => {
         if(!pg.grades) return;
         majors.forEach(m => {
-          const key = Object.keys(pg.grades).find(k=>k.includes(m));
+          const key = Object.keys(pg.grades).find(k=>majorMatchesDept(k, m));
           if(key) gradeData.push({univ:u.nm, pg:pg.n, grade:pg.grades[key].avg, key});
         });
       });
